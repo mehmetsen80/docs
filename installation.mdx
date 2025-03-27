@@ -1,0 +1,296 @@
+---
+title: 'Installation'
+description: 'Getting started with Linqra components'
+icon: 'download'
+---
+
+## Core Components
+
+Linqra consists of three main components that work together to provide a complete API management solution:
+
+### Discovery Server
+
+The Discovery Server is built on Netflix Eureka and serves as the service registry for your microservices architecture. It:
+- Enables dynamic service discovery
+- Maintains a registry of available services
+- Facilitates automatic routing by resolving service addresses
+- Supports high availability and fault tolerance
+
+### API Gateway
+
+The API Gateway is the central component of the Linqra ecosystem. It:
+- Manages all incoming API requests
+- Implements dynamic routing based on service discovery
+- Provides built-in resilience patterns
+- Handles security and authentication
+- Supports both traditional REST APIs and AI endpoints
+
+### Edge Service
+
+The Edge Service provides a web-based user interface for monitoring and managing your API ecosystem:
+- Displays detailed metrics and statistics
+- Monitors service health and performance
+- Provides real-time analytics
+- Offers configuration management capabilities
+
+<div style={{ display: 'flex', justifyContent: 'center', margin: '2rem 0' }}>
+  <img src="/images/components.svg" alt="Linqra Core Components" />
+</div>
+
+## Security Configuration
+
+Linqra uses SSL/TLS certificates for secure communication between components. For development environments, you can:
+
+<Card title="Self-Signed Certificates" icon="shield-check" href="api-reference/selfsignedcerts">
+  Generate and configure self-signed certificates for local development
+</Card>
+
+For production environments, we recommend using certificates from a trusted Certificate Authority (CA).
+
+## Environmental Variables
+
+Each Linqra component requires specific environment variables for proper configuration and operation. These variables control various aspects of the system, from basic connectivity to advanced features.
+
+<Card title="Environment Variables" icon="gear" href="api-reference/envvariables">
+  Configure all components through environment variables
+</Card>
+
+## Installation Options
+
+You can install Linqra components either as standalone applications or using containers. 
+
+
+## Docker Compose Configuration
+
+### Containerized Setup
+
+All required technologies are available as containerized solutions for easy deployment:
+
+```bash
+Available Containers:
+- MongoDB (3-node replica set)
+- Redis
+- Keycloak
+- PostgreSQL (for Keycloak)
+- Eureka Server
+```
+
+The complete tech stack can be deployed using the following Docker Compose configuration:
+
+```yaml
+version: '3.8'
+
+networks:
+  default:
+  linqra-network:
+    driver: bridge
+    name: linqra-network  # Explicitly set the network name
+
+services:
+  # postgres
+  postgres-service:
+    build:
+      context: .
+      dockerfile: ./.kube/postgres/Dockerfile
+    command: postgres -c "max_connections=200"
+    restart: always
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - ./.kube/postgres/data/:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    networks:
+      - linqra-network
+
+  # postgres admin
+  pgadmin-service:
+    build:
+      context: .
+      dockerfile: ./.kube/pgadmin/Dockerfile
+    restart: always
+    ports:
+      - "9090:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user-name@domain-name.com
+      PGADMIN_DEFAULT_PASSWORD: strong-password
+    volumes:
+      - ./.kube/pgadmin/data/:/var/lib/pgadmin
+    networks:
+      - linqra-network
+
+  # keycloak
+  keycloak-service:
+    build:
+      context: .
+      dockerfile: ./.kube/keycloak/Dockerfile
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-service:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KC_HTTP_ENABLED: true
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME_STRICT: false
+      KC_LOG_LEVEL: info
+      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command:
+      - start-dev
+      - --import-realm
+      - --export-realm
+    volumes:
+      - .kube/keycloak/data/import:/opt/keycloak/data/import
+      - .kube/keycloak/data/export:/opt/keycloak/data/export
+    depends_on:
+      postgres-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000;echo -e 'GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n' >&3;if [ $? -eq 0 ]; then echo 'Healthcheck Successful';exit 0;else echo 'Healthcheck Failed';exit 1;fi;"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    ports:
+      - "8281:8080"
+    networks:
+      - linqra-network
+
+  # mongodb nodes
+  mongodb1:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb1
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./.kube/mongodb/data1/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - linqra-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27017 -keyFile /data/mongo-keyfile
+
+  mongodb2:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb2
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27018:27018"
+    volumes:
+      - ./.kube/mongodb/data2/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - linqra-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27018 -keyFile /data/mongo-keyfile
+
+  mongodb3:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb3
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27019:27019"
+    volumes:
+      - ./.kube/mongodb/data3/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - linqra-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27019 -keyFile /data/mongo-keyfile
+
+  # redis
+  redis-service:
+    build:
+      context: .
+      dockerfile: ./.kube/redis/Dockerfile
+    environment:
+      REDIS_GATEWAY_URL: redis-service
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./.kube/redis/data/:/var/lib/redis/data
+      - ./.kube/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      - linqra-network
+```
+
+<Note>
+  Make sure to update the environment variables and passwords according to your security requirements before deploying to production.
+</Note>
+
+## Tech Stack
+
+Linqra's architecture is built on a robust set of technologies, each serving a specific purpose in the ecosystem:
+
+| Component | Technology | Purpose |
+|:----------|:-----------|:---------|
+| Database | MongoDB | Primary data storage |
+| Cache | Redis | High-performance caching |
+| Identity Provider | Keycloak | Authentication and authorization |
+| Supporting Database | PostgreSQL | Keycloak data storage |
+| Service Discovery | Eureka | Service registry and discovery |
+
+All these components are available as containerized solutions for easy deployment and scaling.
+
+<div style={{ display: 'flex', justifyContent: 'center', margin: '2rem 0' }}>
+  <img src="/images/techstack.svg" alt="Linqra Tech Stack" />
+</div>
+
+### Database Layer
+<CardGroup cols={2}>
+  <Card title="MongoDB" icon="database" href="api-reference/mongodb">
+    Primary database with high availability replica set
+  </Card>
+  <Card title="Redis" icon="bolt" href="api-reference/redis">
+    High-performance caching and real-time data layer
+  </Card>
+</CardGroup>
+
+### Identity Management
+<Card title="Keycloak" icon="shield-keyhole" href="api-reference/keycloak">
+  Identity and Access Management solution
+  <div className="text-sm text-gray-500 mt-2">
+    Uses PostgreSQL for data storage (database choice configurable)
+  </div>
+</Card>
+
+<Note>
+  If your organization already has an Identity Provider set up, you can integrate it with Linqra. Otherwise, we provide a containerized Keycloak setup with PostgreSQL.
+</Note>

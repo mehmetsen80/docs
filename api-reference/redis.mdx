@@ -1,0 +1,174 @@
+---
+title: 'Redis Configuration'
+description: 'High-performance caching and real-time data layer for Linqra'
+icon: 'bolt'
+---
+
+## Overview
+
+Redis functions as a critical performance layer in Linqra's architecture, significantly reducing latency and database load. It provides real-time data processing and caching capabilities essential for high-performance API operations.
+
+## Core Functionalities
+
+### Routing Optimization
+
+<div style={{ overflowX: 'auto' }}>
+  <table style={{ width: '100%', tableLayout: 'fixed' }}>
+    <thead>
+      <tr>
+        <th style={{ width: '20%', textAlign: 'left' }}>Feature</th>
+        <th style={{ width: '30%', textAlign: 'left' }}>Purpose</th>
+        <th style={{ width: '50%', textAlign: 'left' }}>Components</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dynamic Route Caching</td>
+        <td>Optimize frequent route access</td>
+        <td>• Frequently accessed route patterns<br/>• Service discovery results<br/>• Load balancing configurations</td>
+      </tr>
+      <tr>
+        <td>Endpoint Resolution</td>
+        <td>Manage API routing</td>
+        <td>• API endpoint mappings<br/>• Service location cache<br/>• Route transformation rules</td>
+      </tr>
+      <tr>
+        <td>Service Discovery Cache</td>
+        <td>Track service availability</td>
+        <td>• Available service instances<br/>• Health check results<br/>• Service metadata</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+### Performance Enhancement
+
+<div style={{ overflowX: 'auto' }}>
+  <table style={{ width: '100%', tableLayout: 'fixed' }}>
+    <thead>
+      <tr>
+        <th style={{ width: '20%', textAlign: 'left' }}>Feature</th>
+        <th style={{ width: '30%', textAlign: 'left' }}>Purpose</th>
+        <th style={{ width: '50%', textAlign: 'left' }}>Components</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Real-time Metrics</td>
+        <td>Monitor system performance</td>
+        <td>• Current request rates<br/>• Active connections<br/>• Response time statistics</td>
+      </tr>
+      <tr>
+        <td>Response Optimization</td>
+        <td>Improve response times</td>
+        <td>• Query result caching<br/>• Frequently accessed data<br/>• Response templates</td>
+      </tr>
+      <tr>
+        <td>Cache Management</td>
+        <td>Optimize cache operations</td>
+        <td>• TTL configurations<br/>• Cache invalidation rules<br/>• Memory optimization</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+### System Synchronization
+
+<div style={{ overflowX: 'auto' }}>
+  <table style={{ width: '100%', tableLayout: 'fixed' }}>
+    <thead>
+      <tr>
+        <th style={{ width: '20%', textAlign: 'left' }}>Feature</th>
+        <th style={{ width: '30%', textAlign: 'left' }}>Purpose</th>
+        <th style={{ width: '50%', textAlign: 'left' }}>Components</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Real-time Updates</td>
+        <td>Maintain system consistency</td>
+        <td>• Configuration changes<br/>• Service state changes<br/>• System events</td>
+      </tr>
+      <tr>
+        <td>Configuration Management</td>
+        <td>Handle system settings</td>
+        <td>• Dynamic settings<br/>• Feature flags<br/>• System parameters</td>
+      </tr>
+      <tr>
+        <td>Cache Coordination</td>
+        <td>Ensure cache consistency</td>
+        <td>• Distributed cache invalidation<br/>• Cache consistency<br/>• Update propagation</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+## Local Development Setup
+
+### Docker Configuration
+
+The Redis instance for local development is configured using Docker Compose and a custom Dockerfile.
+
+#### Docker Compose Configuration
+
+```yaml
+services:
+  redis-service:
+    build:
+      context: .
+      dockerfile: ./.kube/redis/Dockerfile
+    environment:
+      REDIS_GATEWAY_URL: redis-service
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./.kube/redis/data/:/var/lib/redis/data
+      - ./.kube/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      - linqra-network
+```
+
+#### Dockerfile
+
+```dockerfile
+FROM redis/redis-stack:latest
+```
+
+#### Redis Configuration (redis.conf)
+
+```conf
+bind 0.0.0.0
+protected-mode no
+port 6379
+```
+
+<Note>
+- `bind 0.0.0.0` allows connections from any IP address
+- `protected-mode no` disables the protected mode (suitable for development)
+- `port 6379` sets the default Redis port
+</Note>
+
+### Directory Structure
+```bash
+.kube/
+└── redis/
+    ├── Dockerfile
+    ├── redis.conf
+    └── data/
+```
+
+## Connection Configuration
+
+Redis connection settings can be configured through environment variables:
+
+```bash
+# Redis Connection Settings
+export REDIS_HOST="localhost"
+export REDIS_PORT="6379"
+export REDIS_PASSWORD="your_password"
+```
+
+<Note>
+  Redis is configured for high availability with appropriate persistence settings to prevent data loss during restarts.
+</Note>

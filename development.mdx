@@ -1,107 +1,1245 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: 'Development Guide'
+description: 'Set up and develop client microservices for Linqra'
+icon: 'code'
 ---
 
-<Info>
-  **Prerequisite**: Please install Node.js (version 19 or higher) before proceeding. <br />
-  Please upgrade to ```docs.json``` before proceeding and delete the legacy ```mint.json``` file.
-</Info>
+<Card title="Linqra Sample Inventory Service" icon="github" href="https://github.com/mehmetsen80/Linqra-Sample-InventoryService">
+  View the complete sample service implementation with CRUD operations and service-to-service communication.
+</Card>
 
-Follow these steps to install and run Mintlify on your operating system:
+<Card title="Linqra Sample Product Service" icon="github" href="https://github.com/mehmetsen80/Linqra-Sample-ProductService">
+  View the sample product service implementation with REST endpoints for product management and integration with other microservices.
+</Card>
 
-**Step 1**: Install Mintlify:
+## Creating Custom Microservices
 
-<CodeGroup>
+This guide demonstrates how to create and configure new microservices that integrate with the Linqra platform. We'll use the "Inventory Service" as a reference implementation.
 
-  ```bash npm
-  npm i -g mintlify
-  ```
+### Project Structure
 
-```bash yarn
-yarn global add mintlify
-```
-
-</CodeGroup>
-
-**Step 2**: Navigate to the docs directory (where the `docs.json` file is located) and execute the following command:
+A typical Linqra microservice follows this structure:
 
 ```bash
-mintlify dev
+my-service/
+├── pom.xml                     # Maven project configuration
+└── src/
+    └── main/
+        ├── java/
+        │   └── org/
+        │       └── lite/
+        │           └── myservice/
+        │               ├── MyServiceApplication.java   # Main application class
+        │               └── config/
+        │                   └── EurekaClientConfig.java # Service discovery config
+        └── resources/
+            └── application.yml # Service configuration
 ```
 
-A local preview of your documentation will be available at `http://localhost:3000`.
+### Creating a New Microservice
 
-### Custom Ports
+Let's walk through creating the Inventory Service example:
 
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. To run Mintlify on port 3333, for instance, use this command:
+#### 1. Set Up Project Structure
+
+Create the directories shown below:
 
 ```bash
-mintlify dev --port 3333
+LINQRA_INVENTORY_SERVICE/
+├── pom.xml
+└── src/
+    └── main/
+        ├── java/
+        │   └── org/
+        │       └── lite/
+        │           └── inventory/
+        │               ├── InventoryServiceApplication.java
+        │               └── config/
+        │                   └── EurekaClientConfig.java
+        └── resources/
+            └── application.yml
 ```
 
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
+#### 2. Configure Maven Dependencies
 
-```md
-Port 3000 is already in use. Trying 3001 instead.
+Create a `pom.xml` with the necessary dependencies:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.lite.inventory</groupId>
+    <artifactId>inventory-service</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.3</version>
+        <relativePath/>
+    </parent>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring-cloud.version>2023.0.3</spring-cloud.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+          <groupId>org.projectlombok</groupId>
+          <artifactId>lombok</artifactId>
+          <version>1.18.34</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+    </dependencies>
+</project>
 ```
 
-## Mintlify Versions
+#### 3. Create Main Application Class
 
-Please note that each CLI release is associated with a specific version of Mintlify. If your local website doesn't align with the production version, please update the CLI:
+Create the main application class `InventoryServiceApplication.java`:
 
-<CodeGroup>
+```java
+package org.lite.inventory;
 
-```bash npm
-npm i -g mintlify@latest
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class InventoryServiceApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(InventoryServiceApplication.class, args);
+    }
+}
 ```
 
-```bash yarn
-yarn global upgrade mintlify
+#### 4. Configure Service Discovery
+
+Create `EurekaClientConfig.java` to enable service discovery:
+
+```java
+package org.lite.inventory.config;
+
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@EnableDiscoveryClient
+public class EurekaClientConfig {
+}
 ```
 
-</CodeGroup>
+#### 5. Configure Application Properties
 
-## Validating Links
+Create `application.yml` with necessary settings:
 
-The CLI can assist with validating reference links made in your documentation. To identify any broken links, use the following command:
+```yaml
+spring:
+  application:
+    name: inventory-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://${KEYCLOAK_CLIENT_URL:localhost}:${KEYCLOAK_CLIENT_PORT:8281}/realms/Linqra
+server:
+  port: 0
+  http2:
+    enabled: true
+  ssl:
+    enabled: true
+    key-store: ${CLIENT_KEY_STORE}
+    key-store-password: ${CLIENT_KEY_STORE_PASSWORD}
+    key-alias: ${CLIENT_ALIAS_NAME:client-app}
+    key-store-type: PKCS12
+    trust-store: ${CLIENT_TRUST_STORE}
+    trust-store-password: ${CLIENT_TRUST_STORE_PASSWORD}
+    trust-store-type: JKS
+    client-auth: want
+  servlet:
+    context-path: /inventory-service
+
+gateway:
+  base-url: https://${GATEWAY_SERVICE_URL:localhost}:7777
+
+logging:
+  file:
+    name: logs/inventory-service.log
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+    org.springframework.security.oauth2.client: DEBUG
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.cloud.loadbalancer: TRACE
+    org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
+
+eureka:
+  client:
+    service-url:
+      defaultZone: https://${EUREKA_CLIENT_URL:localhost}:8761/eureka
+    enabled: true
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_URL:localhost}
+    instance-id: ${spring.application.name}:${instanceId:${random.value}}
+    non-secure-port-enabled: false
+    secure-port-enabled: true
+    secure-port: ${server.port}
+```
+
+### Run Configuration in IntelliJ
+
+#### 1. VM Options Configuration
+
+Set the following VM options:
 
 ```bash
-mintlify broken-links
+-Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/Linqra/keys/client-truststore.jks
+-Djavax.net.ssl.trustStorePassword=123456
 ```
-
-## Deployment
-
-<Tip>
-  Unlimited editors available under the [Pro
-  Plan](https://mintlify.com/pricing) and above.
-</Tip>
-
-If the deployment is successful, you should see the following:
 
 <Frame>
-  <img src="/images/checks-passed.png" style={{ borderRadius: '0.5rem' }} />
+  <img 
+    src="/images/inventory_service_vm.png" 
+    alt="Inventory Service VM Options Configuration" 
+  />
 </Frame>
 
-## Code Formatting
+#### 2. Environment Variables
 
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
+Set the following environment variables:
 
-## Troubleshooting
+```bash
+CLIENT_KEY_STORE=/Users/mehmetsen/IdeaProjects/Linqra/keys/client-keystore.jks
+CLIENT_KEY_STORE_PASSWORD=123456
+CLIENT_TRUST_STORE=/Users/mehmetsen/IdeaProjects/Linqra/keys/client-truststore.jks
+CLIENT_TRUST_STORE_PASSWORD=123456
+```
 
-<AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
+<Frame>
+  <img 
+    src="/images/inventory_service_ev.png" 
+    alt="Inventory Service Environment Variables" 
+  />
+</Frame>
 
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of mintlify: `npm remove -g mintlify`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall mintlify: `npm install -g mintlify`
-  </Accordion>
+<Note>
+  Remember to adjust the paths according to your actual project location.
+</Note>
 
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the \~/.mintlify folder. Afterwards, run `mintlify dev` again.
-  </Accordion>
-</AccordionGroup>
+### Verifying Service Registration
 
-Curious about what changed in the CLI version? [Check out the CLI changelog.](https://www.npmjs.com/package/mintlify?activeTab=versions)
+After starting your service, verify that it has registered with Eureka by accessing the Eureka dashboard at `https://localhost:8761/`.
+
+You should see your service listed in the "Instances currently registered with Eureka" section:
+
+<Frame>
+  <img 
+    src="/images/inventory_service_eureka_validation.png" 
+    alt="Inventory Service registered in Eureka" 
+  />
+</Frame>
+
+<Note>
+  A successful registration means:
+  - Your service shows as "UP" in the Status column
+  - It appears with a unique instance ID
+  - The API-GATEWAY service is also registered and running
+</Note>
+
+<Warning>
+  If you see an emergency message about renewals, don't be alarmed. This often appears during development when services are frequently started and stopped. As long as your service shows "UP", it is properly registered.
+</Warning>
+
+## Extending Your Microservice
+
+Let's extend our inventory service with additional components:
+
+### Updated Project Structure
+
+After adding the controller and model classes, your project structure should look like this:
+
+```bash
+LINQRA_INVENTORY_SERVICE/
+├── pom.xml
+└── src/
+    └── main/
+        ├── java/
+        │   └── org/
+        │       └── lite/
+        │           └── inventory/
+        │               ├── InventoryServiceApplication.java
+        │               ├── config/
+        │               │   └── EurekaClientConfig.java
+        │               ├── controller/
+        │               │   └── HealthController.java
+        │               └── model/
+        │                   └── HealthStatus.java
+        └── resources/
+            └── application.yml
+```
+
+### Adding Health Monitoring
+
+#### 1. Create Health Model
+
+Create the `HealthStatus.java` class in the model package:
+
+```java
+package org.lite.inventory.model;
+
+import lombok.Data;
+
+import java.time.Instant;
+import java.util.Map;
+
+@Data
+public class HealthStatus {
+    private String serviceId;        // Service identifier
+    private String status;           // Current health status (UP/DOWN)
+    private String uptime;           // Service uptime
+    private Instant timestamp;       // Current timestamp
+    private Map<String, Double> metrics;  // Performance metrics
+}
+```
+
+#### 2. Create Health Controller
+
+Create the `HealthController.java` class in the controller package:
+
+```java
+package org.lite.inventory.controller;
+
+import org.lite.inventory.model.HealthStatus;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/health")
+public class HealthController {
+
+    @Value("${spring.application.name}")
+    private String applicationName;
+    
+    private final Instant startTime = Instant.now();
+
+    @GetMapping
+    public ResponseEntity<HealthStatus> getHealthStatus() {
+        HealthStatus status = new HealthStatus();
+        status.setServiceId(applicationName);
+        status.setStatus("UP");
+        status.setTimestamp(Instant.now());
+        
+        // Calculate uptime
+        Duration uptime = Duration.between(startTime, Instant.now());
+        long days = uptime.toDays();
+        long hours = uptime.toHoursPart();
+        long minutes = uptime.toMinutesPart();
+        long seconds = uptime.toSecondsPart();
+        status.setUptime(String.format("%d days, %d hours, %d minutes, %d seconds", 
+                                      days, hours, minutes, seconds));
+        
+        // Add system metrics
+        Map<String, Double> metrics = new HashMap<>();
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        long usedHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
+        long maxHeapMemory = memoryBean.getHeapMemoryUsage().getMax();
+        
+        metrics.put("heapUsed", (double) usedHeapMemory / (1024 * 1024)); // MB
+        metrics.put("heapMax", (double) maxHeapMemory / (1024 * 1024)); // MB
+        metrics.put("heapUtilization", (double) usedHeapMemory / maxHeapMemory * 100); // percentage
+        metrics.put("availableProcessors", (double) Runtime.getRuntime().availableProcessors());
+        
+        status.setMetrics(metrics);
+        
+        return ResponseEntity.ok(status);
+    }
+}
+```
+
+### Integration with API Gateway
+
+The API Gateway will automatically communicate with your service's health endpoint if health checking is enabled. The `/api/health` endpoint will return detailed information about your service's health status, including:
+
+- Service identifier
+- Current status (UP/DOWN)
+- Service uptime
+- Current timestamp
+- Performance metrics like heap usage and CPU information
+
+This allows the API Gateway to make intelligent routing decisions and implement circuit breaking if your service experiences issues.
+
+
+<Note>
+  Since we're using dynamic port allocation (`server.port: 0`), you'll need to check the Eureka dashboard or your service logs to determine the assigned port.
+</Note>
+
+## Best Practices for Controllers
+
+When building REST APIs in your microservice:
+
+1. **Use Proper Request Mapping**: Prefix all endpoints with `/api/{resource}` for consistency
+
+2. **Return Appropriate Status Codes**:
+   - 200 OK for successful operations
+   - 201 Created for resource creation
+   - 204 No Content for successful operations with no response body
+   - 400 Bad Request for client errors
+   - 404 Not Found when resources don't exist
+   - 500 Internal Server Error for server errors
+
+3. **Validation**: Add validation to request models using annotations like `@Valid` and constraint annotations
+
+4. **Exception Handling**: Create a global exception handler to provide consistent error responses
+
+5. **Documentation**: Use Swagger/OpenAPI annotations to document your API endpoints
+
+## Enhancing Security Configuration
+
+Let's extend our microservice with proper security configuration to validate JWT tokens and implement mutual TLS (mTLS) authentication.
+
+### Updated Project Structure
+
+After adding the security components, your project structure should look like this:
+
+```bash
+LINQRA_INVENTORY_SERVICE/
+├── pom.xml
+└── src/
+    └── main/
+        ├── java/
+        │   └── org/
+        │       └── lite/
+        │           └── inventory/
+        │               ├── InventoryServiceApplication.java
+        │               ├── config/
+        │               │   ├── EurekaClientConfig.java
+        │               │   └── SecurityConfig.java
+        │               ├── controller/
+        │               │   └── HealthController.java
+        │               ├── filter/
+        │               │   └── JwtRoleValidationFilter.java
+        │               └── model/
+        │                   └── HealthStatus.java
+        └── resources/
+            └── application.yml
+```
+
+### Security Implementation
+
+#### 1. JWT Role Validation Filter
+
+Create a filter to validate JWT tokens and check for required roles:
+
+```java
+package org.lite.inventory.filter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+@Component
+@Slf4j
+public class JwtRoleValidationFilter extends OncePerRequestFilter {
+
+    @Override
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull  HttpServletResponse response,
+                                    @NonNull  FilterChain filterChain) throws ServletException, IOException {
+
+        // Retrieve the JWT token from the security context
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            // Log the JWT token for debugging purposes
+            log.info("JWT Token: {}", jwt.getTokenValue());
+            // Log roles for debugging
+            List<String> realmRoles = (List<String>) jwt.getClaimAsMap("realm_access").get("roles");
+            log.info("Realm Roles: {}", realmRoles);
+
+            Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
+            log.info("Client Roles: {}", resourceAccess);
+
+            if (hasRequiredRole(jwt)) {
+                filterChain.doFilter(request, response); // Continue the request processing
+            } else {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN); // Return 403 Forbidden if role check fails
+            }
+        } else {
+            //It's up to you which line do you want to enable, the latter one is more secure, as you don't force the call to use a jwt token
+            //filterChain.doFilter(request, response); // No JWT token, continue request processing, i.e. calling the GET from browser
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN); // Return 403 Forbidden if role check fails, you are forcing to use the token
+        }
+    }
+
+    //We force both realm and resource roles to exist in the token
+    private boolean hasRequiredRole(Jwt jwt) {
+        // Check realm roles
+        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+        boolean hasRealmRole = false;
+        if (realmAccess != null) {
+            List<String> realmRoles = (List<String>) realmAccess.get("roles");
+            if (realmRoles != null && realmRoles.contains("gateway_admin_realm")) {
+                hasRealmRole = true;
+            }
+        }
+
+        // Check client roles for lite-mesh-gateway-client
+        boolean hasClientRole = false;
+        Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
+        if (resourceAccess != null && resourceAccess.containsKey("linqra-gateway-client")) {
+            Map<String, List<String>> clientRoles = (Map<String, List<String>>) resourceAccess.get("linqra-gateway-client");
+            if (clientRoles.get("roles").contains("gateway_admin")) {
+                hasClientRole = true;
+            }
+        }
+
+        // Both roles must be present
+        return hasRealmRole && hasClientRole;
+    }
+}
+```
+
+#### 2. Security Configuration
+
+Create the `SecurityConfig.java` class to configure Spring Security:
+
+```java
+package org.lite.inventory.config;
+
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.lite.inventory.filter.JwtRoleValidationFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
+
+
+@Configuration
+@EnableWebSecurity
+@AllArgsConstructor
+@Slf4j
+public class SecurityConfig {
+
+    //It will be called even though you don't use it here, so don't remove it
+    private final JwtRoleValidationFilter jwtRoleValidationFilter;
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http
+                .x509(x509 -> x509
+                        .x509PrincipalExtractor((principal -> { //Enable mTLS (client certificate authentication)
+                                    // Extract the CN from the certificate (adjust this logic as needed)
+                                    String dn = principal.getSubjectX500Principal().getName();
+                                    log.info("dn: {}", dn);
+                                    String cn = dn.split(",")[0].replace("CN=", "");
+                                    return cn;  // Return the Common Name (CN) as the principal
+                                })
+                        ))
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize -> authorize
+                                .requestMatchers("/inventory-service/**")//no matter what you put here, if we have the gateway token from oauth2ResourceServer, we'll be authenticated
+                                .permitAll()  // Public endpoints (if any)
+                                .anyRequest()
+                                .authenticated()
+                )
+                .oauth2ResourceServer(oauth2-> {  // Enable OAuth2-based authentication (via JWT tokens)
+                    oauth2.jwt(Customizer.withDefaults());
+                });
+
+        return http.build();
+    }
+}
+```
+
+### Understanding the Security Architecture
+
+#### Dual Authentication Mechanism
+
+Our microservice uses two authentication mechanisms:
+
+1. **JWT Token Validation**
+   - OAuth2 Resource Server configuration authenticates JWT tokens from Keycloak
+   - JwtRoleValidationFilter validates that tokens contain required roles:
+     - Realm role: `gateway_admin_realm`
+     - Client role: `gateway_admin` (for the `linqra-gateway-client`)
+   - These roles were configured in Keycloak as described in the [Keycloak Configuration](/api-reference/keycloak) documentation
+
+2. **Mutual TLS (mTLS)**
+   - SSL configuration in `application.yml` enables client authentication (`client-auth: want`)
+   - X509 configuration extracts the Common Name (CN) from client certificates
+   - This enables secure service-to-service communication with certificate-based authentication
+
+#### Authorization Flow
+
+1. When a request arrives, the JWT token is validated for proper signatures and expiration
+2. Our custom `JwtRoleValidationFilter` checks for the presence of required roles
+3. If mTLS is enabled, client certificates are also validated
+4. If all checks pass, the request is processed; otherwise, a 403 Forbidden response is returned
+
+### Testing Security Configuration
+
+To test with a valid JWT token, you need to:
+
+1. Obtain a token from Keycloak using the client credentials grant type
+2. Include the token in the Authorization header of your requests:
+   ```
+   Authorization: Bearer <your-jwt-token>
+   ```
+
+<Warning>
+  The security configuration demands both proper JWT tokens and valid certificates. Make sure your API Gateway is correctly configured to pass these credentials to your microservice.
+</Warning>
+
+## Creating REST API Controllers and Intercommunication
+
+Before implementing business logic, let's set up proper service-to-service communication and create our main API controller.
+
+### Updated Project Structure
+
+After adding these components, your project structure will look like this:
+
+```bash
+LINQRA_INVENTORY_SERVICE/
+├── pom.xml
+└── src/
+    └── main/
+        ├── java/
+        │   └── org/
+        │       └── lite/
+        │           └── inventory/
+        │               ├── InventoryServiceApplication.java
+        │               ├── config/
+        │               │   ├── EurekaClientConfig.java
+        │               │   ├── RestTemplateConfig.java
+        │               │   └── SecurityConfig.java
+        │               ├── controller/
+        │               │   ├── HealthController.java
+        │               │   └── InventoryController.java
+        │               ├── filter/
+        │               │   └── JwtRoleValidationFilter.java
+        │               ├── interceptor/
+        │               │   └── ServiceNameInterceptor.java
+        │               └── model/
+        │                   ├── HealthStatus.java
+        │                   ├── InventoryItem.java
+        │                   ├── ProductAvailabilityResponse.java
+        │                   └── ProductInfo.java
+        └── resources/
+            └── application.yml
+```
+
+### Service Identification in Communication
+
+#### 1. Create Service Interceptor
+
+The `ServiceNameInterceptor` adds a service identifier to all outgoing REST calls, which helps with logging, debugging, and request tracing:
+
+```java
+package org.lite.inventory.interceptor;
+
+import org.springframework.http.HttpRequest;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.lang.NonNull;
+
+import java.io.IOException;
+
+public class ServiceNameInterceptor implements ClientHttpRequestInterceptor {
+
+    @Override
+    public @NonNull ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] body, ClientHttpRequestExecution execution) throws IOException {
+        request.getHeaders().add("X-Service-Name", "inventory-service"); // Add the service name
+        return execution.execute(request, body);
+    }
+}
+```
+
+#### 2. Configure RestTemplate
+
+Create a `RestTemplateConfig` class to set up a pre-configured RestTemplate with our interceptor:
+
+```java
+package org.lite.inventory.config;
+
+import org.lite.inventory.interceptor.ServiceNameInterceptor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Configuration
+public class RestTemplateConfig {
+
+    @Bean
+    public RestTemplate restTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+
+        // Configure a Jackson message converter that supports application/octet-stream
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        converter.setSupportedMediaTypes(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM));
+
+        // Add converter to RestTemplate
+        restTemplate.getMessageConverters().add(converter);
+
+        // Add the interceptor
+        List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>(restTemplate.getInterceptors());
+        interceptors.add(new ServiceNameInterceptor());
+        restTemplate.setInterceptors(interceptors);
+
+        return restTemplate;
+    }
+}
+```
+
+#### 3. Create Main Controller
+
+Create a skeleton for the `InventoryController` that will house our business logic endpoints:
+
+```java
+package org.lite.inventory.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+
+@RestController
+@RequestMapping("/api/inventory")
+public class InventoryController {
+
+    private final RestTemplate restTemplate;
+
+    @Autowired
+    public InventoryController(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    // API endpoints will be implemented in subsequent sections
+}
+```
+
+### Understanding the Intercommunication Architecture
+
+#### Service Identification
+
+Every microservice in the Linqra ecosystem should identify itself in communications with other services. This provides several benefits:
+
+1. **Request Tracing**: The source of each request is clearly identified in logs
+2. **Debugging**: Makes troubleshooting complex service interactions easier
+3. **Auditing**: Allows for proper auditing of service-to-service communication
+4. **Access Control**: Enables service-specific access policies
+
+#### RestTemplate Configuration
+
+Our `RestTemplateConfig` provides:
+
+1. **Media Type Support**: Handles both JSON and binary data
+2. **Service Identity**: Automatically adds the service name to all outgoing requests
+3. **Centralized Configuration**: One place to add any future interceptors or converters
+
+### Building RESTful APIs
+
+When implementing the `InventoryController`, follow these patterns for standard CRUD operations:
+
+#### GET (Retrieve)
+```java
+@GetMapping("/{id}")
+public ResponseEntity<Item> getItem(@PathVariable Long id) {
+    // Implementation
+    return ResponseEntity.ok(item);
+}
+```
+
+#### POST (Create)
+```java
+@PostMapping
+public ResponseEntity<Item> createItem(@Valid @RequestBody ItemRequest request) {
+    // Implementation
+    return ResponseEntity.status(HttpStatus.CREATED).body(createdItem);
+}
+```#### PUT (Update)
+```java
+@PutMapping("/{id}")
+public ResponseEntity<Item> updateItem(@PathVariable Long id, @Valid @RequestBody ItemRequest request) {
+    // Implementation
+    return ResponseEntity.ok(updatedItem);
+}
+```
+
+#### DELETE (Remove)
+```java
+@DeleteMapping("/{id}")
+public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
+    // Implementation
+    return ResponseEntity.noContent().build();
+}
+```
+
+### Service-to-Service Communication Example
+
+When your service needs to communicate with another microservice, use the injected RestTemplate:
+
+```java
+@GetMapping("/dependent-data")
+public ResponseEntity<DependentData> getDependentData() {
+    String url = "https://other-service/api/resource";
+    
+    // The ServiceNameInterceptor will automatically add the X-Service-Name header
+    ResponseEntity<DependentData> response = restTemplate.getForEntity(url, DependentData.class);
+    
+    return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+}
+```
+
+### Security Considerations for APIs
+
+When implementing API endpoints, keep these security considerations in mind:
+
+1. **Input Validation**: Always validate incoming data with `@Valid` annotations
+2. **Authentication Checks**: Ensure endpoints check for appropriate authentication
+3. **Authorization Logic**: Implement fine-grained authorization in service methods
+4. **Rate Limiting**: Consider adding rate limiting for high-traffic endpoints
+5. **Sensitive Data**: Never expose sensitive data in responses
+
+## Implementing Business Logic with REST Controllers
+
+Let's finalize our Inventory Service by implementing a fully functional controller with CRUD operations and inter-service communication.
+
+### Updated Project Structure
+
+After adding all the business logic components, your project structure will look like this:
+
+```bash
+LINQRA_INVENTORY_SERVICE/
+├── pom.xml
+└── src/
+    └── main/
+        ├── java/
+        │   └── org/
+        │       └── lite/
+        │           └── inventory/
+        │               ├── InventoryServiceApplication.java
+        │               ├── config/
+        │               │   ├── EurekaClientConfig.java
+        │               │   ├── RestTemplateConfig.java
+        │               │   └── SecurityConfig.java
+        │               ├── controller/
+        │               │   ├── HealthController.java
+        │               │   └── InventoryController.java
+        │               ├── filter/
+        │               │   └── JwtRoleValidationFilter.java
+        │               ├── interceptor/
+        │               │   └── ServiceNameInterceptor.java
+        │               └── model/
+        │                   ├── HealthStatus.java
+        │                   ├── InventoryItem.java
+        │                   ├── ProductAvailabilityResponse.java
+        │                   └── ProductInfo.java
+        └── resources/
+            └── application.yml
+```
+
+### Domain Models
+
+First, let's create the domain models for our inventory system:
+
+#### 1. InventoryItem
+
+Create a model to represent inventory items:
+
+```java
+package org.lite.inventory.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class InventoryItem {
+    private Long id;
+    private String name;
+    private int quantity;
+    private double price;
+}
+```
+
+#### 2. ProductInfo
+
+Create a model for product information that will be enriched with inventory data:
+
+```java
+package org.lite.inventory.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductInfo {
+    private String id;
+    private String name;
+    private String description;
+    private BigDecimal price;
+    private String category;
+    
+    // Inventory-related fields that get enriched by the inventory service
+    private boolean inStock;
+    private Integer availableQuantity;
+    private String estimatedDelivery;
+    private String warehouseLocation;
+}
+```
+
+#### 3. ProductAvailabilityResponse
+
+Create a wrapper for product responses:
+
+```java
+package org.lite.inventory.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductAvailabilityResponse {
+    private List<ProductInfo> products;
+    private String timestamp;
+    private String serviceSource = "product-service";
+    private String inventoryStatus;
+}
+```
+
+### Complete Inventory Controller
+
+Now let's implement the full `InventoryController` with CRUD operations and service-to-service communication:
+
+```java
+package org.lite.inventory.controller;
+
+import lombok.extern.slf4j.Slf4j;
+import org.lite.inventory.model.InventoryItem;
+import org.lite.inventory.model.ProductAvailabilityResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/inventory")
+public class InventoryController {
+
+    private final RestTemplate restTemplate;
+    private final Map<Long, InventoryItem> inventoryItems = new HashMap<>();
+    private final AtomicLong idCounter = new AtomicLong(1);
+    
+    @Value("${gateway.base-url:http://localhost:8080}")
+    private String gatewayBaseUrl;
+
+    @Autowired
+    public InventoryController(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+        // Initialize with some mock data
+        addMockItem("Laptop", 10, 999.99);
+        addMockItem("Smartphone", 20, 699.99);
+        addMockItem("Headphones", 30, 149.99);
+    }
+
+    private void addMockItem(String name, int quantity, double price) {
+        long id = idCounter.getAndIncrement();
+        inventoryItems.put(id, new InventoryItem(id, name, quantity, price));
+    }
+
+    // GET all inventory items
+    @GetMapping
+    public ResponseEntity<List<InventoryItem>> getAllItems() {
+        return ResponseEntity.ok(new ArrayList<>(inventoryItems.values()));
+    }
+
+    // GET a specific inventory item by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<InventoryItem> getItemById(@PathVariable Long id) {
+        if (inventoryItems.containsKey(id)) {
+            return ResponseEntity.ok(inventoryItems.get(id));
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // POST a new inventory item
+    @PostMapping
+    public ResponseEntity<InventoryItem> createItem(@RequestBody InventoryItem item) {
+        long id = idCounter.getAndIncrement();
+        InventoryItem newItem = new InventoryItem(id, item.getName(), item.getQuantity(), item.getPrice());
+        inventoryItems.put(id, newItem);
+        return new ResponseEntity<>(newItem, HttpStatus.CREATED);
+    }
+
+    // PUT update an existing inventory item
+    @PutMapping("/{id}")
+    public ResponseEntity<InventoryItem> updateItem(@PathVariable Long id, @RequestBody InventoryItem item) {
+        if (inventoryItems.containsKey(id)) {
+            InventoryItem updatedItem = new InventoryItem(id, item.getName(), item.getQuantity(), item.getPrice());
+            inventoryItems.put(id, updatedItem);
+            return ResponseEntity.ok(updatedItem);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // DELETE an inventory item
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
+        if (inventoryItems.containsKey(id)) {
+            inventoryItems.remove(id);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping(value = "/product-availability", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ProductAvailabilityResponse> getProductAvailability(
+            @RequestParam(required = false) String productId) {
+        String url = gatewayBaseUrl + "/product-service/products";
+        if (productId != null) {
+            url += "/" + productId;
+        }
+        
+        try {
+            ProductAvailabilityResponse response = restTemplate.getForObject(url, ProductAvailabilityResponse.class);
+            log.info("Retrieved product information from Product Service: {}", response);
+            
+            // Enrich product data with inventory availability information
+            if (response != null && response.getProducts() != null) {
+                response.getProducts().forEach(product -> {
+                    // Here we're simulating checking inventory for the product
+                    boolean inStock = inventoryItems.values().stream()
+                        .anyMatch(item -> item.getName().equalsIgnoreCase(product.getName()) && item.getQuantity() > 0);
+                    product.setInStock(inStock);
+                    
+                    // Add estimated delivery information based on stock status
+                    product.setEstimatedDelivery(inStock ? "1-2 business days" : "3-4 weeks");
+                });
+            }
+            
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
+        } catch (Exception e) {
+            log.error("Error retrieving product information", e);
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+}
+```
+
+### Understanding the Controller Implementation
+
+#### CRUD Operations
+
+The controller implements standard CRUD operations for inventory items:
+
+1. **CREATE (POST)**: Adds a new inventory item
+2. **READ (GET)**: Retrieves either all items or a specific item by ID
+3. **UPDATE (PUT)**: Updates an existing inventory item
+4. **DELETE (DELETE)**: Removes an inventory item
+
+#### In-Memory Data Store
+
+For simplicity, this implementation uses an in-memory `HashMap` to store inventory data:
+- `inventoryItems`: Map that stores items with their ID as the key
+- `idCounter`: Atomic counter that ensures unique IDs for new items
+- `addMockItem`: Helper method to initialize some sample data
+
+#### Service-to-Service Communication
+
+The `/product-availability` endpoint demonstrates service-to-service communication:
+
+1. It calls the Product Service (via the API Gateway) to get product information
+2. It enriches the product data with inventory information (availability, delivery estimates)
+3. It returns the combined data to the caller
+
+This pattern showcases how microservices can collaborate to provide a richer API experience by combining their capabilities.
+
+### Testing the Inventory Service
+
+When running the Inventory Service, you can test its endpoints:
+
+1. **Get all items**: `GET https://localhost:{port}/inventory-service/api/inventory`
+2. **Get a specific item**: `GET https://localhost:{port}/inventory-service/api/inventory/1`
+3. **Create a new item**: `POST https://localhost:{port}/inventory-service/api/inventory`
+   ```json
+   {
+     "name": "Gaming Console",
+     "quantity": 5,
+     "price": 499.99
+   }
+   ```
+4. **Update an item**: `PUT https://localhost:{port}/inventory-service/api/inventory/1`
+   ```json
+   {
+     "name": "Laptop Pro",
+     "quantity": 15,
+     "price": 1299.99
+   }
+   ```
+5. **Delete an item**: `DELETE https://localhost:{port}/inventory-service/api/inventory/1`
+6. **Product availability**: `GET https://localhost:{port}/inventory-service/api/inventory/product-availability`
+
+<Note>
+  Remember that the actual port will be dynamically assigned since we're using `server.port: 0`. Check the Eureka dashboard or service logs to find the assigned port.
+</Note>
+
+<Warning>
+  The inter-service communication will only work if the Product Service is also running and registered with Eureka. If it's not running, the `/product-availability` endpoint will return an error.
+</Warning>
+
+## Next Steps in Development
+
+Now that you have implemented the core service with proper security, you can extend it with:
+
+1. **Business Logic Controllers**
+   - Create additional controllers for your service's functionality
+   - Implement proper authorization checks based on user roles
+
+2. **Database Integration**
+   - Add Spring Data repositories for persistence
+   - Configure database connections in application.yml
+
+3. **Service-to-Service Communication**
+   - Use RestTemplate or WebClient to call other microservices
+   - Configure circuit breakers for resilience
+
+4. **Testing**
+   - Implement unit tests for controllers and services
+   - Create integration tests for full API verification
+
+5. **Swagger Documentation**
+   - Add OpenAPI annotations to document endpoints
+   - Configure Swagger UI for interactive documentation
+
+## Reference Implementation
+
+A complete reference implementation of the Inventory Service is available on GitHub for your reference:
+
+<Card title="Linqra Sample Inventory Service" icon="github" href="https://github.com/mehmetsen80/Linqra-Sample-InventoryService">
+  View the complete sample service implementation with CRUD operations and service-to-service communication.
+</Card>
+
+<Card title="Linqra Sample Product Service" icon="github" href="https://github.com/mehmetsen80/Linqra-Sample-ProductService">
+  View the sample product service implementation with REST endpoints for product management and integration with other microservices.
+</Card>
+
+The repository includes:
+- Full implementation of the InventoryController with CRUD operations
+- Models for inventory items and product availability
+- Service-to-service communication with the Product Service
+- Mock data for testing purposes
+
+This reference implementation demonstrates best practices for creating microservices that integrate with the Linqra platform and can serve as a starting point for your own services.
+
+By following this guide and referencing the sample implementation, you can create secure, cloud-native microservices that integrate seamlessly with the Linqra platform. Your services will be discoverable through Eureka, secured with both JWT tokens and mTLS, and ready for extension with your specific business logic.
+

@@ -1,13 +1,16 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "theme": "maple",
+  "name": "Linqra",
+  "css": [
+    "/_static/style.css"
+  ],
   "colors": {
-    "primary": "#16A34A",
+    "primary": "#ed7534",
     "light": "#07C983",
-    "dark": "#15803D"
+    "dark": "#C7622C"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.png",
   "navigation": {
     "tabs": [
       {
@@ -17,19 +20,10 @@
             "group": "Get Started",
             "pages": [
               "introduction",
+              "installation",
               "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Essentials",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/reusable-snippets"
+              "development",
+              "edgeservice"
             ]
           }
         ]
@@ -40,7 +34,12 @@
           {
             "group": "API Documentation",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/selfsignedcerts",
+              "api-reference/envvariables",
+              "api-reference/mongodb",
+              "api-reference/redis",
+              "api-reference/keycloak"
             ]
           },
           {
@@ -54,49 +53,30 @@
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/logo_main_light.png",
+    "dark": "/logo/logo_main_dark.png"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:msen@dipme.app"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Linq.com",
+      "href": "https://www.linq.com"
     }
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/linq",
+      "github": "https://github.com/mehmetsen80/linq",
+      "linkedin": "https://linkedin.com/company/linq"
     }
   }
 }

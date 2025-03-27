@@ -1,0 +1,15 @@
+.logo,
+[class*='flex justify-between items-center'] img[src*='logo_main'],
+nav img[src*='logo_main'],
+header img[src*='logo_main'] {
+    width: 100px !important;
+    height: 40px !important;
+    object-fit: contain !important;
+}
+
+/* Additional specific override for dark mode */
+.dark [class*='flex justify-between items-center'] img[src*='logo_main'] {
+    width: 100px !important;
+    height: 40px !important;
+    object-fit: contain !important;
+}

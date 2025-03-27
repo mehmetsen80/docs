@@ -1,0 +1,36 @@
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="400" fill="#f8fafc"/>
+  
+  <!-- Central Platform Box -->
+  <rect x="150" y="150" width="500" height="200" rx="10" fill="#ed7534" opacity="0.1"/>
+  <text x="400" y="180" text-anchor="middle" fill="#C7622C" font-family="Arial" font-weight="bold" font-size="24">Linqra Platform</text>
+  
+  <!-- Component Boxes -->
+  <rect x="200" y="210" width="120" height="100" rx="8" fill="#ed7534" opacity="0.9"/>
+  <text x="260" y="255" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="14">Discovery</text>
+  <text x="260" y="275" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="14">Server</text>
+  
+  <rect x="340" y="210" width="120" height="100" rx="8" fill="#C7622C" opacity="0.9"/>
+  <text x="400" y="255" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="14">API</text>
+  <text x="400" y="275" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="14">Gateway</text>
+  
+  <rect x="480" y="210" width="120" height="100" rx="8" fill="#ed7534" opacity="0.9"/>
+  <text x="540" y="255" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="14">Edge</text>
+  <text x="540" y="275" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="14">Service</text>
+  
+  <!-- Connecting Lines -->
+  <path d="M 320 260 L 340 260" stroke="#C7622C" stroke-width="2"/>
+  <path d="M 460 260 L 480 260" stroke="#C7622C" stroke-width="2"/>
+  
+  <!-- External Arrows -->
+  <path d="M 400 100 L 400 210" stroke="#C7622C" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="400" y="90" text-anchor="middle" fill="#4B5563" font-family="Arial" font-size="14">Incoming Requests</text>
+  
+  <!-- Arrow Marker Definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#C7622C"/>
+    </marker>
+  </defs>
+</svg>

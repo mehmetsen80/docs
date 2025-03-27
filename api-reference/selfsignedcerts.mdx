@@ -1,0 +1,209 @@
+---
+title: 'Self-Signed Certificates'
+description: 'Setting up SSL/TLS certificates for local development'
+icon: 'certificate'
+---
+
+This guide explains the self-signed certificates used for secure communication between Linqra components.
+
+<Note>
+  For your convenience, all necessary certificates are pre-generated and available in the `Linqra/keys` folder. You can use these certificates directly for local development.
+</Note>
+
+## Pre-Generated Certificates
+
+The following certificates and keystores are available in the `Linqra/keys` directory:
+
+```bash
+keys/
+├── # Core Component Certificates
+├── client-cert.pem                   # Client certificate
+├── client-keystore.jks               # Client keystore
+├── client-truststore.jks             # Client truststore
+│
+├── # Gateway Certificates
+├── gateway-cert.pem                  # Gateway certificate (local)
+├── gateway-keystore.jks              # Gateway keystore (local)
+├── gateway-cert-container.pem        # Gateway certificate (container)
+├── gateway-keystore-container.jks    # Gateway keystore (container)
+├── gateway-truststore.jks            # Gateway truststore
+│
+├── # Eureka Discovery Certificates
+├── eureka-cert.pem                  # Eureka certificate (local)
+├── eureka-keystore.jks              # Eureka keystore (local)
+├── eureka-cert-container.pem        # Eureka certificate (container)
+├── eureka-keystore-container.jks    # Eureka keystore (container)
+├── eureka-truststore.jks            # Eureka truststore
+│
+├── # Service-Specific Certificates
+├── inventory-cert-container.pem      # Inventory service certificate
+├── inventory-keystore-container.jks  # Inventory service keystore
+├── product-cert-container.pem        # Product service certificate
+└── product-keystore-container.jks    # Product service keystore
+```
+
+<Note>
+  All certificates are configured with default password `123456` and are organized into:
+  - Core client certificates for general use
+  - Gateway certificates for both local and containerized environments
+  - Eureka discovery certificates for both local and containerized environments
+  - Service-specific certificates for containerized microservices
+</Note>
+
+## Certificate Generation
+
+If you need to regenerate the certificates or understand how they were created, follow the instructions below.
+
+### Client Certificate
+Generate a generic client certificate for your microservices:
+
+```bash
+# Generate client keystore
+keytool -genkeypair -alias client-app -keyalg RSA -keysize 2048 \
+  -keystore client-keystore.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=localhost, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+# Export client certificate
+keytool -exportcert -alias client-app -file client-cert.pem \
+  -keystore client-keystore.jks -storepass 123456
+```
+
+### Gateway Certificates
+Generate certificates for the API Gateway:
+
+```bash
+# For local development
+keytool -genkeypair -alias gateway-app -keyalg RSA -keysize 2048 \
+  -keystore gateway-keystore.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=localhost, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias gateway-app -file gateway-cert.pem \
+  -keystore gateway-keystore.jks -storepass 123456
+
+# For containerized environment
+keytool -genkeypair -alias gateway-app-container -keyalg RSA -keysize 2048 \
+  -keystore gateway-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=api-gateway-service, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias gateway-app-container -file gateway-cert-container.pem \
+  -keystore gateway-keystore-container.jks -storepass 123456
+```
+
+### Discovery Server Certificates
+Generate certificates for the Eureka Discovery Server:
+
+```bash
+# For local development
+keytool -genkeypair -alias eureka-app -keyalg RSA -keysize 2048 \
+  -keystore eureka-keystore.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=localhost, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias eureka-app -file eureka-cert.pem \
+  -keystore eureka-keystore.jks -storepass 123456
+
+# For containerized environment
+keytool -genkeypair -alias eureka-app-container -keyalg RSA -keysize 2048 \
+  -keystore eureka-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=discovery-service, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias eureka-app-container -file eureka-cert-container.pem \
+  -keystore eureka-keystore-container.jks -storepass 123456
+```
+
+### Service-Specific Certificates
+For containerized environments, generate certificates for each service:
+
+```bash
+# Inventory Service
+keytool -genkeypair -alias inventory-service-container -keyalg RSA -keysize 2048 \
+  -keystore inventory-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=inventory-service, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias inventory-service-container \
+  -file inventory-cert-container.pem \
+  -keystore inventory-keystore-container.jks -storepass 123456
+
+# Product Service
+keytool -genkeypair -alias product-service-container -keyalg RSA -keysize 2048 \
+  -keystore product-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=product-service, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias product-service-container \
+  -file product-cert-container.pem \
+  -keystore product-keystore-container.jks -storepass 123456
+```
+
+## Truststore Configuration
+
+### Gateway Truststore
+Import all certificates into the gateway truststore:
+
+```bash
+keytool -importcert -file gateway-cert.pem -alias gateway-app \
+  -keystore gateway-truststore.jks -storepass 123456
+keytool -importcert -file gateway-cert-container.pem -alias gateway-app-container \
+  -keystore gateway-truststore.jks -storepass 123456
+keytool -importcert -file client-cert.pem -alias client-app \
+  -keystore gateway-truststore.jks -storepass 123456
+keytool -importcert -file inventory-cert-container.pem -alias inventory-service-container \
+  -keystore gateway-truststore.jks -storepass 123456
+keytool -importcert -file product-cert-container.pem -alias product-service-container \
+  -keystore gateway-truststore.jks -storepass 123456
+keytool -importcert -file eureka-cert.pem -alias eureka-app \
+  -keystore gateway-truststore.jks -storepass 123456
+keytool -importcert -file eureka-cert-container.pem -alias eureka-app-container \
+  -keystore gateway-truststore.jks -storepass 123456
+```
+
+### Client Truststore
+Import all certificates into the client truststore:
+
+```bash
+keytool -importcert -file client-cert.pem -alias client-app \
+  -keystore client-truststore.jks -storepass 123456
+keytool -importcert -file inventory-cert-container.pem -alias inventory-service-container \
+  -keystore client-truststore.jks -storepass 123456
+keytool -importcert -file product-cert-container.pem -alias product-service-container \
+  -keystore client-truststore.jks -storepass 123456
+keytool -importcert -file gateway-cert.pem -alias gateway-app \
+  -keystore client-truststore.jks -storepass 123456
+keytool -importcert -file gateway-cert-container.pem -alias gateway-app-container \
+  -keystore client-truststore.jks -storepass 123456
+keytool -importcert -file eureka-cert.pem -alias eureka-app \
+  -keystore client-truststore.jks -storepass 123456
+keytool -importcert -file eureka-cert-container.pem -alias eureka-app-container \
+  -keystore client-truststore.jks -storepass 123456
+```
+
+### Eureka Truststore
+Import all certificates into the Eureka truststore:
+
+```bash
+keytool -importcert -file gateway-cert.pem -alias gateway-app \
+  -keystore eureka-truststore.jks -storepass 123456
+keytool -importcert -file client-cert.pem -alias client-app \
+  -keystore eureka-truststore.jks -storepass 123456
+keytool -importcert -file inventory-cert-container.pem -alias inventory-service-container \
+  -keystore eureka-truststore.jks -storepass 123456
+keytool -importcert -file product-cert-container.pem -alias product-service-container \
+  -keystore eureka-truststore.jks -storepass 123456
+keytool -importcert -file gateway-cert-container.pem -alias gateway-app-container \
+  -keystore eureka-truststore.jks -storepass 123456
+```
+
+## Verification
+
+To verify the contents of any truststore:
+
+```bash
+keytool -list -v -keystore <truststore-name>.jks -storepass 123456
+```
+
+Replace `<truststore-name>` with either `gateway-truststore`, `client-truststore`, or `eureka-truststore`.

@@ -1,0 +1,313 @@
+---
+title: 'MongoDB Configuration'
+description: 'Setting up MongoDB for Linqra with high availability'
+icon: 'database'
+---
+
+## Overview
+
+MongoDB serves as the primary data store for Linqra, requiring a replica set configuration for high availability and data redundancy. The database is configured with a 3-node replica set architecture to ensure continuous operation and data consistency.
+
+## Data Structure
+
+### Core Data Collections
+
+<div style={{ overflowX: 'auto' }}>
+  <table style={{ width: '100%', tableLayout: 'fixed' }}>
+    <thead>
+      <tr>
+        <th style={{ width: '20%', textAlign: 'left' }}>Collection</th>
+        <th style={{ width: '30%', textAlign: 'left' }}>Purpose</th>
+        <th style={{ width: '50%', textAlign: 'left' }}>Key Components</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Users</td>
+        <td>User management and authentication</td>
+        <td>• Account information<br/>• Credentials<br/>• Sessions<br/>• Access tokens</td>
+      </tr>
+      <tr>
+        <td>Teams</td>
+        <td>Organizational structure</td>
+        <td>• Team hierarchies<br/>• Department mappings<br/>• Member associations</td>
+      </tr>
+      <tr>
+        <td>Roles</td>
+        <td>Access control and permissions</td>
+        <td>• Role definitions<br/>• Permission sets<br/>• Access policies</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+### API Management
+
+<div style={{ overflowX: 'auto' }}>
+  <table style={{ width: '100%', tableLayout: 'fixed' }}>
+    <thead>
+      <tr>
+        <th style={{ width: '20%', textAlign: 'left' }}>Collection</th>
+        <th style={{ width: '30%', textAlign: 'left' }}>Purpose</th>
+        <th style={{ width: '50%', textAlign: 'left' }}>Key Components</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Routes</td>
+        <td>API routing configuration</td>
+        <td>• Endpoint definitions<br/>• Route mappings<br/>• Load balancing rules</td>
+      </tr>
+      <tr>
+        <td>Services</td>
+        <td>Service registry and management</td>
+        <td>• Service registry<br/>• Dependencies<br/>• Health status<br/>• Versions</td>
+      </tr>
+      <tr>
+        <td>Documentation</td>
+        <td>API documentation</td>
+        <td>• API specifications<br/>• Version history<br/>• Endpoint docs</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+### System Collections
+
+<div style={{ overflowX: 'auto' }}>
+  <table style={{ width: '100%', tableLayout: 'fixed' }}>
+    <thead>
+      <tr>
+        <th style={{ width: '20%', textAlign: 'left' }}>Collection</th>
+        <th style={{ width: '30%', textAlign: 'left' }}>Purpose</th>
+        <th style={{ width: '50%', textAlign: 'left' }}>Key Components</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Metrics</td>
+        <td>Performance monitoring</td>
+        <td>• Response times<br/>• Request volumes<br/>• Error rates<br/>• Resource usage</td>
+      </tr>
+      <tr>
+        <td>Audit</td>
+        <td>System auditing</td>
+        <td>• System events<br/>• User activities<br/>• Config changes</td>
+      </tr>
+      <tr>
+        <td>Analytics</td>
+        <td>System analytics</td>
+        <td>• Usage patterns<br/>• Performance trends<br/>• Health metrics</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<Note>
+  All collections are automatically replicated across the three nodes in the replica set, ensuring data redundancy and high availability.
+</Note>
+
+## Local Development Setup
+
+### Directory Preparation
+Create the necessary data directories for the MongoDB replica set:
+
+```bash
+# Create data directories
+sudo mkdir -p ~/IdeaProjects/linqra/.kube/mongodb/data1
+sudo mkdir -p ~/IdeaProjects/linqra/.kube/mongodb/data2
+sudo mkdir -p ~/IdeaProjects/linqra/.kube/mongodb/data3
+sudo chmod -R 777 ~/IdeaProjects/linqra/.kube/mongodb/data*
+
+# Create SSL keyfile
+openssl rand -base64 756 > ~/IdeaProjects/linqra/.kube/mongodb/mongo-keyfile
+chmod 600 ~/IdeaProjects/linqra/.kube/mongodb/mongo-keyfile
+```
+
+### Docker Compose Configuration
+The MongoDB replica set is configured using Docker Compose. Here's the complete configuration for all three nodes:
+
+```yaml
+services:
+  mongodb1:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb1
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./.kube/mongodb/data1/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - linqra-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27017 -keyFile /data/mongo-keyfile
+
+  mongodb2:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb2
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27018:27018"
+    volumes:
+      - ./.kube/mongodb/data2/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - linqra-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27018 -keyFile /data/mongo-keyfile
+
+  mongodb3:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb3
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27019:27019"
+    volumes:
+      - ./.kube/mongodb/data3/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - linqra-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27019 -keyFile /data/mongo-keyfile
+```
+
+<Note>
+  Each node is configured with resource limits (1 CPU, 1GB memory) and uses the same keyfile for authentication.
+  The only differences between nodes are their container names, ports, and data volume paths.
+</Note>
+
+### Host Configuration
+
+Add the following entries to your hosts file (important for container communication):
+
+```bash
+# Add to /etc/hosts
+127.0.0.1       mongodb1
+127.0.0.1       mongodb2
+127.0.0.1       mongodb3
+```
+
+<Warning>
+  Without proper host configuration, Docker containers may not be able to communicate with the MongoDB nodes.
+</Warning>
+
+### Replica Set Initialization
+
+1. Connect to the primary node:
+```bash
+docker exec -it mongodb1 mongosh -u root -p mongopw --authenticationDatabase admin
+```
+
+2. Initialize the replica set:
+```javascript
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "mongodb1:27017" },
+    { _id: 1, host: "mongodb2:27018" },
+    { _id: 2, host: "mongodb3:27019" }
+  ]
+}, { force: true });
+```
+
+3. Verify the replica set status:
+```bash
+rs.status();
+```
+
+<Note>
+  The replica set will automatically elect a primary node, with the remaining nodes becoming secondaries.
+  Node roles may change over time as the cluster rebalances.
+</Note>
+
+### Connecting to the Replica Set
+
+You can connect to the replica set using the following connection string:
+
+```bash
+mongosh "mongodb://root:mongopw@localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0&authSource=admin"
+```
+
+This same connection string can be used in:
+- Your application configuration
+- MongoDB Compass
+- Other MongoDB clients
+
+## Connection Configuration
+
+MongoDB connection settings for your application:
+
+```bash
+# MongoDB Connection Settings
+export MONGODB_URI="mongodb://root:mongopw@localhost:27017,localhost:27018,localhost:27019/linqra?replicaSet=rs0&authSource=admin"
+export MONGODB_DATABASE="linqra"
+```
+
+<Note>
+  For production environments, it's recommended to use secrets management for storing credentials.
+</Note>
+
+## Replica Set Configuration
+
+<Note>
+  Linqra requires a 3-node MongoDB replica set configuration to ensure high availability and fault tolerance.
+</Note>
+
+The replica set consists of:
+- 1 Primary node (handles all write operations)
+- 2 Secondary nodes (provide read scalability and automatic failover)
+
+### Benefits
+- **High Availability**: Automatic failover if the primary node becomes unavailable
+- **Data Redundancy**: Multiple copies of data across different nodes
+- **Read Scalability**: Secondary nodes can handle read operations
+- **Disaster Recovery**: Built-in backup and recovery capabilities
+
+### Dockerfile
+
+```dockerfile
+FROM mongo:latest
+```
+
+### Directory Structure
+```bash
+.kube/
+└── mongodb/
+    ├── Dockerfile
+    ├── mongo-keyfile
+    ├── data1/
+    ├── data2/
+    └── data3/
+```
+
+<Note>
+  The data directories (data1, data2, data3) will be populated when the containers start running. The mongo-keyfile is generated during the setup process.
+</Note>

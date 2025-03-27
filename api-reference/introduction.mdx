@@ -1,33 +1,34 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'API Reference'
+description: 'Overview of the Linqra API integrations and services'
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+# Linqra API Reference
 
-## Welcome
+This section provides a comprehensive guide to the various APIs and services that make up the Linqra platform.
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+## Core Services
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+<CardGroup cols={2}>
+  <Card title="Self Signed Certificates" icon="certificate" href="/api-reference/selfsignedcerts">
+    Creating and managing self-signed certificates for secure communications
+  </Card>
+  <Card title="Environmental Variables" icon="sliders" href="/api-reference/envvariables">
+    Configuration settings for services and applications
+  </Card>
+  <Card title="MongoDB" icon="database" href="/api-reference/mongodb">
+    Document database for flexible data storage and retrieval
+  </Card>
+  <Card title="Redis" icon="bolt" href="/api-reference/redis">
+    In-memory data structure store for caching and performance optimization
+  </Card>
+  <Card title="Keycloak" icon="key" href="/api-reference/keycloak">
+    Identity and access management service for authentication and authorization
+  </Card>
+</CardGroup>
 
-## Authentication
+## Using the APIs
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All Linqra APIs follow RESTful principles with JSON as the primary data format. The APIs are secured using OAuth 2.0 with JWT tokens provided by Keycloak.
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
-```
+For detailed information about specific endpoints, request/response formats, and authentication requirements, please refer to the individual service documentation sections.

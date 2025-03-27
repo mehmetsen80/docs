@@ -1,0 +1,148 @@
+---
+title: 'Environment Variables'
+description: 'Configure Linqra components through environment variables'
+icon: 'sliders'
+---
+
+This guide explains how to set up the necessary environment variables for Linqra components.
+
+## Setting Up Environment Variables
+
+To configure the environment variables on macOS:
+
+```bash
+nano ~/.zshrc
+```
+
+## Required Variables
+
+Below are the essential environment variables grouped by their purpose. These variables should be added to your profile configuration file.
+
+### Java and Maven Setup
+```bash
+# Java and Maven
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export PATH=$JAVA_HOME/bin:$PATH
+export M2_HOME="/Applications/IntelliJ IDEA CE.app/Contents/plugins/maven/lib/maven3"
+export PATH="$M2_HOME/bin:$PATH"
+```
+
+### SSL Certificate Paths
+
+<Note>
+  The default location for SSL certificates is the "keys" folder, but you can specify any location by adjusting the `KEY_BASE_DIR`.
+</Note>
+
+```bash
+# Base directory for SSL keys
+export KEY_BASE_DIR="/etc/keys"
+
+# Eureka Discovery Server
+export EUREKA_KEY_STORE="$KEY_BASE_DIR/eureka-keystore.jks"
+export EUREKA_KEY_STORE_PASSWORD="123456"
+
+# API Gateway
+export GATEWAY_KEY_STORE="$KEY_BASE_DIR/gateway-keystore.jks"
+export GATEWAY_KEY_STORE_PASSWORD="123456"
+export GATEWAY_TRUST_STORE="$KEY_BASE_DIR/gateway-truststore.jks"
+export GATEWAY_TRUST_STORE_PASSWORD="123456"
+
+# Client Microservices
+export CLIENT_KEY_STORE="$KEY_BASE_DIR/client-keystore.jks"
+export CLIENT_KEY_STORE_PASSWORD="123456"
+export CLIENT_TRUST_STORE="$KEY_BASE_DIR/client-truststore.jks"
+export CLIENT_TRUST_STORE_PASSWORD="123456"
+```
+
+### Authentication Configuration
+```bash
+# OAuth2 Settings
+export OAUTH2_REDIRECT_URI="http://localhost:3000/callback"
+```
+
+### Notification Settings
+
+<Note>
+  🚧 Notification features are currently under development. These variables are reserved for future use.
+</Note>
+
+```bash
+# Slack Integration (Coming Soon)
+export SLACK_ENABLED=false
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+
+# SMTP Configuration (Coming Soon)
+export SMTP_ENABLED=false
+export SMTP_PASSWORD=123456
+export SMTP_USERNAME=abcdef
+```
+
+## Complete Environment Variables
+
+Here's the complete set of environment variables in a single block:
+
+```bash
+# Java and Maven
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export PATH=$JAVA_HOME/bin:$PATH
+export M2_HOME="/Applications/IntelliJ IDEA CE.app/Contents/plugins/maven/lib/maven3"
+export PATH="$M2_HOME/bin:$PATH"
+
+# Base directory for SSL keys
+export KEY_BASE_DIR="/etc/keys"
+
+# Eureka Discovery Server
+export EUREKA_KEY_STORE="$KEY_BASE_DIR/eureka-keystore.jks"
+export EUREKA_KEY_STORE_PASSWORD="123456"
+
+# API Gateway
+export GATEWAY_KEY_STORE="$KEY_BASE_DIR/gateway-keystore.jks"
+export GATEWAY_KEY_STORE_PASSWORD="123456"
+export GATEWAY_TRUST_STORE="$KEY_BASE_DIR/gateway-truststore.jks"
+export GATEWAY_TRUST_STORE_PASSWORD="123456"
+
+# Client Microservices
+export CLIENT_KEY_STORE="$KEY_BASE_DIR/client-keystore.jks"
+export CLIENT_KEY_STORE_PASSWORD="123456"
+export CLIENT_TRUST_STORE="$KEY_BASE_DIR/client-truststore.jks"
+export CLIENT_TRUST_STORE_PASSWORD="123456"
+
+# OAuth2 Settings
+export OAUTH2_REDIRECT_URI="http://localhost:3000/callback"
+
+# Notification Settings (Coming Soon)
+export SLACK_ENABLED=false
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+export SMTP_ENABLED=false
+export SMTP_PASSWORD=123456
+export SMTP_USERNAME=abcdef
+```
+
+## Applying Changes
+
+After setting the variables, apply the changes:
+
+```bash
+source ~/.zshrc
+```
+
+## Verification
+
+Verify your configuration by checking the certificate paths:
+
+```bash
+echo $EUREKA_KEY_STORE
+echo $GATEWAY_KEY_STORE
+echo $CLIENT_KEY_STORE
+```
+
+<Note>
+  The output should show the full paths to your certificate files based on your `KEY_BASE_DIR` setting.
+</Note>
+
+## Important Notes
+
+- Ensure all certificate files exist in the specified locations before starting the services
+- Default password for all keystores is `123456`
+- Notification services (Slack and SMTP) are disabled by default
+- Adjust the OAuth2 redirect URI according to your frontend application's configuration

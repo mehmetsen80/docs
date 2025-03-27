@@ -1,0 +1,56 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="450" fill="#f8fafc"/>
+  
+  <!-- Central Linqra Platform -->
+  <circle cx="400" cy="250" r="80" fill="#ed7534" opacity="0.9"/>
+  <text x="400" y="260" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="24">Linqra</text>
+  
+  <!-- MongoDB -->
+  <circle cx="200" cy="150" r="60" fill="#00ED64" opacity="0.9"/>
+  <text x="200" y="145" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="16">MongoDB</text>
+  <text x="200" y="165" text-anchor="middle" fill="white" font-family="Arial" font-size="12">Database</text>
+  
+  <!-- Redis -->
+  <circle cx="200" cy="350" r="60" fill="#DC382D" opacity="0.9"/>
+  <text x="200" y="345" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="16">Redis</text>
+  <text x="200" y="365" text-anchor="middle" fill="white" font-family="Arial" font-size="12">Cache</text>
+  
+  <!-- Keycloak -->
+  <circle cx="600" cy="150" r="60" fill="#33A0EA" opacity="0.9"/>
+  <text x="600" y="145" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="16">Keycloak</text>
+  <text x="600" y="165" text-anchor="middle" fill="white" font-family="Arial" font-size="12">Identity Provider</text>
+  
+  <!-- PostgreSQL -->
+  <circle cx="600" cy="350" r="60" fill="#336791" opacity="0.9"/>
+  <text x="600" y="345" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="16">PostgreSQL</text>
+  <text x="600" y="365" text-anchor="middle" fill="white" font-family="Arial" font-size="12">Supporting DB</text>
+  
+  <!-- Eureka -->
+  <circle cx="400" cy="80" r="60" fill="#C7622C" opacity="0.9"/>
+  <text x="400" y="75" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="16">Eureka</text>
+  <text x="400" y="95" text-anchor="middle" fill="white" font-family="Arial" font-size="12">Service Discovery</text>
+  
+  <!-- Connecting Lines with Arrows -->
+  <!-- Eureka to Linqra -->
+  <path d="M 400 140 L 400 170" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- MongoDB to Linqra -->
+  <path d="M 260 170 L 330 215" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Redis to Linqra -->
+  <path d="M 260 330 L 330 285" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Keycloak to Linqra -->
+  <path d="M 540 170 L 470 215" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- PostgreSQL to Linqra -->
+  <path d="M 540 330 L 470 285" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Arrow Marker Definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+  </defs>
+</svg>
