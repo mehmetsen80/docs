@@ -1,14 +1,80 @@
+/* Font face declaration for Rubik Variable Font */
+/* @font-face {
+    font-family: 'Rubik';
+    src: url('../fonts/Rubik/Rubik-VariableFont_wght.ttf') format('truetype-variations');
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Rubik';
+    src: url('../fonts/Rubik/Rubik-Italic-VariableFont_wght.ttf') format('truetype-variations');
+    font-weight: 100 900;
+    font-style: italic;
+} */
+
+/* Font face declaration for Roboto Slab Variable Font */
+/* @font-face {
+    font-family: 'Roboto Slab';
+    src: url('../fonts/RobotoSlab/RobotoSlab-VariableFont_wght.ttf') format('truetype-variations');
+    font-weight: 100 900;
+    font-style: normal;
+} */
+
+/* Set default font and sizes */
+:root {
+    /* Font family selection */
+    /* --selected-font: 'Rubik'; */
+    /* --selected-font: 'Roboto Slab'; */
+    /* --font-sans: var(--selected-font); */
+
+    /* Base font sizes */
+    font-size: 16px;
+}
+
+/* Global typography settings */
+/* body, html {
+    font-family: var(--font-sans) !important;
+    font-size: 1.2rem !important; 
+} */
+
+/* Even smaller typography scale */
+/* h1 {
+    font-size: 1.125rem !important;
+    font-weight: 600 !important;
+}
+
+h2 {
+    font-size: 1rem !important; 
+    font-weight: 600 !important;
+}
+
+h3 {
+    font-size: 0.9375rem !important;
+    font-weight: 600 !important;
+}
+
+h4 {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+}
+
+p, li, div {
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+} */
+
 .logo,
-[class*='flex justify-between items-center'] img[src*='logo_main'],
-nav img[src*='logo_main'],
-header img[src*='logo_main'] {
+[class*='flex justify-between items-center'] img[src*='logo_light'],
+nav img[src*='logo_light'],
+header img[src*='logo_light'] {
     width: 100px !important;
     height: 40px !important;
     object-fit: contain !important;
 }
 
 /* Additional specific override for dark mode */
-.dark [class*='flex justify-between items-center'] img[src*='logo_main'] {
+.dark [class*='flex justify-between items-center'] img[src*='logo_dark'] {
     width: 100px !important;
     height: 40px !important;
     object-fit: contain !important;

@@ -1,11 +1,9 @@
 ---
-title: 'Delete Inventory Item'
+title: 'Get Single Item'
 openapi: 'POST /linq'
 ---
 
-# Delete Inventory Item
-
-Make a POST request to delete a specific inventory item by ID using the Linq protocol wrapper.
+Make a POST request to fetch a specific inventory item by ID using the Linq protocol wrapper.
 
 <CodeGroup>
   ```bash cURL
@@ -16,12 +14,12 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     --data '{
       "link": {
         "target": "inventory-service",
-        "action": "delete"
+        "action": "fetch"
       },
       "query": {
         "intent": "api/inventory/{id}",
         "params": {
-          "id": "8"
+          "id": "3"
         }
       }
     }'
@@ -34,12 +32,12 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
   payload = {
     "link": {
       "target": "inventory-service",
-      "action": "delete"
+      "action": "fetch"
     },
     "query": {
       "intent": "api/inventory/{id}",
       "params": {
-        "id": "8"
+        "id": "3"
       }
     }
   }
@@ -62,12 +60,12 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     body: JSON.stringify({
       link: {
         target: 'inventory-service',
-        action: 'delete'
+        action: 'fetch'
       },
       query: {
         intent: 'api/inventory/{id}',
         params: {
-          id: '8'
+          id: '3'
         }
       }
     })
@@ -93,12 +91,12 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     CURLOPT_POSTFIELDS => json_encode([
       "link" => [
         "target" => "inventory-service",
-        "action" => "delete"
+        "action" => "fetch"
       ],
       "query" => [
         "intent" => "api/inventory/{id}",
         "params" => [
-          "id" => "8"
+          "id" => "3"
         ]
       ]
     ])
@@ -124,12 +122,12 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     payload := map[string]interface{}{
       "link": map[string]string{
         "target": "inventory-service",
-        "action": "delete",
+        "action": "fetch",
       },
       "query": map[string]interface{}{
         "intent": "api/inventory/{id}",
         "params": map[string]string{
-          "id": "8",
+          "id": "3",
         },
       },
     }
@@ -157,18 +155,18 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
   import java.net.http.HttpResponse;
   import java.net.URI;
 
-  public class DeleteInventoryItem {
+  public class GetInventoryItem {
       public static void main(String[] args) {
           String requestBody = """
               {
                 "link": {
                   "target": "inventory-service",
-                  "action": "delete"
+                  "action": "fetch"
                 },
                 "query": {
                   "intent": "api/inventory/{id}",
                   "params": {
-                    "id": "8"
+                    "id": "3"
                   }
                 }
               }
@@ -196,12 +194,12 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
 {
   "link": {
     "target": "inventory-service",
-    "action": "delete"
+    "action": "fetch"
   },
   "query": {
     "intent": "api/inventory/{id}",
     "params": {
-      "id": "8"
+      "id": "3"
     }
   }
 }
@@ -212,7 +210,10 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
 ```json
 {
   "result": {
-    "message": "Resource successfully deleted"
+    "id": 3,
+    "name": "Headphones",
+    "quantity": 30,
+    "price": 149.99
   },
   "metadata": {
     "source": "inventory-service",
@@ -225,8 +226,7 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
 
 ### Notes
 
-- The Linq protocol wraps the delete operation into a unified POST interface
-- The `action: "delete"` indicates this is a deletion operation
-- The `params` object must contain the ID of the item to delete
-- A successful response includes a confirmation message
-- The metadata provides information about the operation's success
+- The `params` object contains the ID of the specific item you want to retrieve
+- The `intent` includes a path parameter `{id}` which is replaced with the actual ID
+- Returns a single item object instead of an array
+- `cacheHit` indicates whether the result was served from cache 

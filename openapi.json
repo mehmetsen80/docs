@@ -1,0 +1,180 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Linqra API",
+    "description": "Linqra API using the Linq protocol wrapper for all HTTP methods",
+    "license": {
+      "name": "MIT"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://localhost:7777",
+      "description": "Local development server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/linq": {
+      "post": {
+        "operationId": "POST /linq",
+        "description": "Universal endpoint for all API operations using the Linq protocol",
+        "x-mintlify-hide-code-samples": true,
+        "requestBody": {
+          "description": "Linq protocol wrapper request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinqRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LinqRequest": {
+        "type": "object",
+        "required": ["link", "query"],
+        "properties": {
+          "link": {
+            "type": "object",
+            "required": ["target", "action"],
+            "properties": {
+              "target": {
+                "type": "string",
+                "description": "Target service name",
+                "example": "service-name"
+              },
+              "action": {
+                "type": "string",
+                "description": "Action to perform (maps to HTTP method)",
+                "enum": ["fetch", "create", "update", "remove", "head", "options"],
+                "example": "fetch"
+              }
+            }
+          },
+          "query": {
+            "type": "object",
+            "required": ["intent"],
+            "properties": {
+              "intent": {
+                "type": "string",
+                "description": "API endpoint path or operation identifier",
+                "example": "api/inventory"
+              },
+              "params": {
+                "type": "object",
+                "description": "Query parameters as key-value pairs",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "payload": {
+                "type": "object",
+                "description": "Request body for POST/PUT/PATCH operations",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "LinqResponse": {
+        "type": "object",
+        "required": ["result", "metadata"],
+        "properties": {
+          "result": {
+            "type": "object",
+            "description": "Response data from the target service",
+            "additionalProperties": true
+          },
+          "metadata": {
+            "type": "object",
+            "required": ["source", "status", "team", "cacheHit"],
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Source service that processed the request",
+                "example": "service-name"
+              },
+              "status": {
+                "type": "string",
+                "description": "Status of the operation",
+                "example": "success"
+              },
+              "team": {
+                "type": "string",
+                "description": "Team identifier from gateway context",
+                "example": "67d0aeb17172416c411d419e"
+              },
+              "cacheHit": {
+                "type": "boolean",
+                "description": "Indicates if the response was served from cache",
+                "example": true
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+} 

@@ -43,12 +43,19 @@
             ]
           },
           {
+            "group": "OpenAPI Reference",
+            "openapi": {
+              "source": "openapi.json"
+         
+            }
+          },
+          {
             "group": "Endpoint Examples",
             "pages": [
-              "api-reference/endpoint/get",
+              "api-reference/endpoint/getall",
+              "api-reference/endpoint/getitem",
               "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/endpoint/delete"
             ]
           }
         ]
@@ -56,8 +63,8 @@
     ]
   },
   "logo": {
-    "light": "/logo/logo_main_light.png",
-    "dark": "/logo/logo_main_dark.png"
+    "light": "/logo/logo_light.png",
+    "dark": "/logo/logo_dark.png"
   },
   "navbar": {
     "links": [

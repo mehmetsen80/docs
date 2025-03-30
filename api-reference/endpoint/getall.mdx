@@ -1,11 +1,10 @@
 ---
-title: 'Delete Inventory Item'
+title: 'Get All Inventory'
 openapi: 'POST /linq'
 ---
 
-# Delete Inventory Item
 
-Make a POST request to delete a specific inventory item by ID using the Linq protocol wrapper.
+Make a POST request to fetch all inventory data using the Linq protocol wrapper.
 
 <CodeGroup>
   ```bash cURL
@@ -16,13 +15,11 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     --data '{
       "link": {
         "target": "inventory-service",
-        "action": "delete"
+        "action": "fetch"
       },
       "query": {
-        "intent": "api/inventory/{id}",
-        "params": {
-          "id": "8"
-        }
+        "intent": "api/inventory",
+        "params": {}
       }
     }'
   ```
@@ -34,13 +31,11 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
   payload = {
     "link": {
       "target": "inventory-service",
-      "action": "delete"
+      "action": "fetch"
     },
     "query": {
-      "intent": "api/inventory/{id}",
-      "params": {
-        "id": "8"
-      }
+      "intent": "api/inventory",
+      "params": {}
     }
   }
   headers = {
@@ -62,13 +57,11 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     body: JSON.stringify({
       link: {
         target: 'inventory-service',
-        action: 'delete'
+        action: 'fetch'
       },
       query: {
-        intent: 'api/inventory/{id}',
-        params: {
-          id: '8'
-        }
+        intent: 'api/inventory',
+        params: {}
       }
     })
   };
@@ -93,13 +86,11 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     CURLOPT_POSTFIELDS => json_encode([
       "link" => [
         "target" => "inventory-service",
-        "action" => "delete"
+        "action" => "fetch"
       ],
       "query" => [
-        "intent" => "api/inventory/{id}",
-        "params" => [
-          "id" => "8"
-        ]
+        "intent" => "api/inventory",
+        "params" => new stdClass()
       ]
     ])
   ]);
@@ -124,13 +115,11 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
     payload := map[string]interface{}{
       "link": map[string]string{
         "target": "inventory-service",
-        "action": "delete",
+        "action": "fetch",
       },
       "query": map[string]interface{}{
-        "intent": "api/inventory/{id}",
-        "params": map[string]string{
-          "id": "8",
-        },
+        "intent": "api/inventory",
+        "params": map[string]interface{}{},
       },
     }
 
@@ -157,19 +146,17 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
   import java.net.http.HttpResponse;
   import java.net.URI;
 
-  public class DeleteInventoryItem {
+  public class GetAllInventory {
       public static void main(String[] args) {
           String requestBody = """
               {
                 "link": {
                   "target": "inventory-service",
-                  "action": "delete"
+                  "action": "fetch"
                 },
                 "query": {
-                  "intent": "api/inventory/{id}",
-                  "params": {
-                    "id": "8"
-                  }
+                  "intent": "api/inventory",
+                  "params": {}
                 }
               }
               """;
@@ -196,13 +183,11 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
 {
   "link": {
     "target": "inventory-service",
-    "action": "delete"
+    "action": "fetch"
   },
   "query": {
-    "intent": "api/inventory/{id}",
-    "params": {
-      "id": "8"
-    }
+    "intent": "api/inventory",
+    "params": {}
   }
 }
 ```
@@ -211,22 +196,45 @@ Make a POST request to delete a specific inventory item by ID using the Linq pro
 
 ```json
 {
-  "result": {
-    "message": "Resource successfully deleted"
-  },
+  "result": [
+    {
+      "id": 1,
+      "name": "Laptop",
+      "quantity": 10,
+      "price": 999.99
+    },
+    {
+      "id": 2,
+      "name": "Smartphone",
+      "quantity": 20,
+      "price": 699.99
+    },
+    {
+      "id": 3,
+      "name": "Headphones",
+      "quantity": 30,
+      "price": 149.99
+    },
+    {
+      "id": 4,
+      "name": "Monitor",
+      "quantity": 15,
+      "price": 349.99
+    }
+  ],
   "metadata": {
     "source": "inventory-service",
     "status": "success",
     "team": "67d0aeb17172416c411d419e",
-    "cacheHit": false
+    "cacheHit": true
   }
 }
 ```
 
 ### Notes
 
-- The Linq protocol wraps the delete operation into a unified POST interface
-- The `action: "delete"` indicates this is a deletion operation
-- The `params` object must contain the ID of the item to delete
-- A successful response includes a confirmation message
-- The metadata provides information about the operation's success
+- The Linq protocol wraps traditional HTTP methods into a unified POST interface
+- The `action: "fetch"` corresponds to the original GET method
+- The `target` specifies which microservice handles the request
+- Empty `params` object means no additional parameters are being sent
+- The response includes a `result` array with inventory items and metadata about the request 
