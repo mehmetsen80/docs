@@ -207,3 +207,106 @@ keytool -list -v -keystore <truststore-name>.jks -storepass 123456
 ```
 
 Replace `<truststore-name>` with either `gateway-truststore`, `client-truststore`, or `eureka-truststore`.
+
+## Edge Service SSL Configuration
+
+For secure local development of the Edge Service, you'll need to set up additional SSL certificates. These certificates enable HTTPS access through `https://localhost:3000`.
+
+### Generate Edge Service Certificate
+
+Navigate to the `keys` directory and generate the required certificate:
+
+<CodeGroup>
+  ```bash macOS/Linux
+  # Navigate to keys directory
+  cd keys
+
+  # Generate certificate and private key
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout edge-private.key \
+      -out edge-certificate.crt \
+      -subj "/C=US/ST=Texas/L=Houston/O=Development/OU=IT/CN=localhost"
+  ```
+
+  ```bash Windows
+  # Navigate to keys directory
+  cd keys
+
+  # For Windows, use ^ for line continuation
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 ^
+      -keyout edge-private.key ^
+      -out edge-certificate.crt ^
+      -subj "/C=US/ST=Texas/L=Houston/O=Development/OU=IT/CN=localhost"
+  ```
+</CodeGroup>
+
+### Trust the Certificate
+
+<Tabs>
+  <Tab title="macOS">
+    ```bash
+    sudo security add-trusted-cert -d -r trustRoot \
+        -k /Library/Keychains/System.keychain edge-certificate.crt
+    ```
+  </Tab>
+  <Tab title="Windows">
+    1. Double click the `edge-certificate.crt` file
+    2. Select "Install Certificate"
+    3. Choose "Local Machine"
+    4. Place certificate in "Trusted Root Certification Authorities"
+    5. Click "Finish"
+  </Tab>
+  <Tab title="Linux">
+    ```bash
+    sudo cp edge-certificate.crt /usr/local/share/ca-certificates/
+    sudo update-ca-certificates
+    ```
+  </Tab>
+</Tabs>
+
+### Security Best Practices
+
+<Warning>
+  Never commit private keys or certificates to version control. These files should be generated locally and kept secure.
+</Warning>
+
+Add the following to your `.gitignore` file:
+
+```bash
+# SSL/TLS Certificates
+keys/*.key
+keys/*.crt
+```
+
+<Note>
+  The generated certificates are valid for 365 days. For production environments, always use proper CA-signed certificates.
+</Note>
+
+### Certificate Details
+
+The Edge Service certificate is configured with the following properties:
+- Validity: 365 days
+- Key Type: RSA 2048-bit
+- Common Name (CN): localhost
+- Organization Unit (OU): IT
+- Organization (O): Development
+- Location (L): Houston
+- State (ST): Texas
+- Country (C): US
+
+### Directory Structure
+
+After generating the Edge Service certificates, your `keys` directory will include:
+
+```bash
+keys/
+├── # Existing certificates ...
+├── edge-certificate.crt          # Edge Service certificate
+└── edge-private.key             # Edge Service private key
+```
+
+<Warning>
+  Ensure proper file permissions are set on the private key:
+  - Linux/macOS: `chmod 600 edge-private.key`
+  - Windows: Restrict access through file properties
+</Warning>
