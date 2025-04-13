@@ -1,0 +1,225 @@
+---
+title: 'Standalone Deployment'
+description: 'Run Linqra components in standalone mode'
+icon: 'server'
+---
+
+## Overview
+
+Standalone deployment is ideal for development environments or small-scale production setups. This guide walks you through running Linqra components individually with their required backing services.
+
+## Prerequisites
+
+Before proceeding, ensure you have:
+
+1. Set up all required environment variables ([Environment Variables Guide](/api-reference/envvariables))
+2. Docker and Docker Compose installed on your system
+3. Access to the Linqra project repository
+
+## Infrastructure Components
+
+Linqra's standalone deployment requires several backing services:
+
+- **Redis**: Rate limiting and temporary data storage
+- **MongoDB**: Application resilience data
+- **PostgreSQL**: Keycloak data storage
+- **Keycloak**: Authentication and authorization
+
+<Note>
+  While we use Keycloak with PostgreSQL by default, you can configure any compatible Identity Provider.
+</Note>
+
+## Launch Infrastructure Services
+
+Start the backing services using Docker Compose:
+
+```bash
+cd ~/IdeaProjects/Linqra/
+```
+
+```bash
+/usr/local/bin/docker compose -f docker-compose.yml -p Linqra up
+```
+
+<Warning>
+  For local development, we provide pre-configured JKS files (self-signed certificates). 
+  For production deployments, you must generate your own certificates.
+</Warning>
+
+## Configure Identity Provider
+
+After services are running:
+
+1. Access Keycloak at `http://localhost:8281`
+2. Follow our [Keycloak Configuration Guide](/api-reference/keycloak) to set up:
+   - Realms
+   - Clients
+   - Roles
+   - Scopes
+
+## Deploy Application Components
+
+After setting up the infrastructure services, you'll need to build and deploy the Linqra application components.
+
+### Build JAR Files
+
+Ensure you're in the Linqra root directory:
+
+```bash
+pwd
+```
+
+The output should show your root directory, for example:
+```bash
+/Users/mehmetsen/IdeaProjects/Linqra
+```
+
+Build the application components using Maven:
+
+```bash
+mvn clean package
+```
+
+This command will create the following JAR files:
+
+| Application | Jar File | Type |
+| ----------- | -------- | ---- |
+| api-gateway | LiteGateway.jar | Gateway |
+| discovery-server | DiscoveryService.jar | Discovery |
+
+<Note>
+  The JAR files will be created in their respective `target` folders within each component's directory.
+</Note>
+
+### Run JAR Files
+
+After building the JARs, you'll need to start each component in the correct order.
+
+### Run the JAR Files from Terminal
+
+#### EUREKA SERVER
+
+1. Start Eureka discovery-server by going to the target folder:
+
+```bash
+cd ~/IdeaProjects/Linqra/discovery-server/target/
+```
+
+2. Run the jar file along with the truststore jks file:
+
+```bash
+java -Djavax.net.ssl.trustStore="$EUREKA_TRUST_STORE" -Djavax.net.ssl.trustStorePassword="$EUREKA_TRUST_STORE_PASSWORD" -jar DiscoveryService.jar
+```
+
+3. Check the Eureka discovery-server endpoint:
+
+```bash
+https://localhost:8761/
+```
+
+#### GATEWAY
+
+1. Go to the api-gateway target folder:
+
+```bash
+cd ~/IdeaProjects/Linqra/api-gateway/target
+```
+
+2. Run the jar file along with the truststore jks file:
+
+```bash
+java -Djavax.net.ssl.trustStore="$GATEWAY_TRUST_STORE" -Djavax.net.ssl.trustStorePassword="$GATEWAY_TRUST_STORE_PASSWORD" -jar LiteGateway.jar
+```
+
+Note that we are not simply using 'java -jar FileName.jar' because SSL requires the truststore parameters to be provided on the command line. These parameters:
+
+-Djavax.net.ssl.trustStore="$CLIENT_TRUST_STORE" -Djavax.net.ssl.trustStorePassword="$CLIENT_TRUST_STORE_PASSWORD"
+
+are necessary for establishing secure SSL connections between services. Without them, the applications would fail with SSL handshake errors.
+
+### Run Client Applications
+
+After setting up the core services, you can deploy client applications that integrate with the Linqra gateway.
+
+#### Prepare Client Services
+
+First, ensure you've downloaded the example client applications from their respective GitHub repositories.
+
+For each client application, you'll need to:
+
+1. Enable the environmental variables in your terminal:
+
+```bash
+source ~/.zshrc
+```
+
+2. Build the application JAR files:
+
+```bash
+mvn clean package
+```
+
+#### Run Inventory Service
+
+Navigate to the inventory service project:
+
+```bash
+cd ~/IdeaProjects/linqra_inventory_service
+```
+
+Build the application:
+
+```bash
+mvn clean package
+```
+
+Navigate to the target directory:
+
+```bash
+cd target
+```
+
+Run the jar file with SSL configuration:
+
+```bash
+java -Djavax.net.ssl.trustStore="$CLIENT_TRUST_STORE" -Djavax.net.ssl.trustStorePassword="$CLIENT_TRUST_STORE_PASSWORD" -jar InventoryService.jar
+```
+
+#### Run Product Service
+
+Navigate to the product service project:
+
+```bash
+cd ~/IdeaProjects/linqra_product_service
+```
+
+Build the application:
+
+```bash
+mvn clean package
+```
+
+Navigate to the target directory:
+
+```bash
+cd target
+```
+
+Run the jar file with SSL configuration:
+
+```bash
+java -Djavax.net.ssl.trustStore="$CLIENT_TRUST_STORE" -Djavax.net.ssl.trustStorePassword="$CLIENT_TRUST_STORE_PASSWORD" -jar ProductService.jar
+```
+
+Now the last part. We need to start the web. Here is what we need to add:
+
+Assuming you are still at the root folder. 
+go to the web root folder
+$ cd edge-service/
+
+Then run the web
+$ sudo npm run dev
+
+Go to the https://localhost:3000/
+
+If you see the "Your connection is not private" on the page, click the link "Proceed to localhost (unsafe)" to continue

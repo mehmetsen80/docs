@@ -57,7 +57,7 @@ export CLIENT_TRUST_STORE_PASSWORD="123456"
 ### Authentication Configuration
 ```bash
 # OAuth2 Settings
-export OAUTH2_REDIRECT_URI="http://localhost:3000/callback"
+export OAUTH2_REDIRECT_URI="https://localhost:3000/callback"
 ```
 
 ### Notification Settings
@@ -75,6 +75,14 @@ export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XX
 export SMTP_ENABLED=false
 export SMTP_PASSWORD=123456
 export SMTP_USERNAME=abcdef
+```
+
+### Keycloak Gateway Configuration
+```bash
+# Keycloak Gateway Settings
+export KEYCLOAK_GATEWAY_URL=localhost
+export KEYCLOAK_GATEWAY_PORT=8281
+export KEYCLOAK_GATEWAY_SECRET=r4MBE75Axgsiu143HGvgQ1qlK6B9LCj5
 ```
 
 ## Complete Environment Variables
@@ -116,6 +124,11 @@ export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XX
 export SMTP_ENABLED=false
 export SMTP_PASSWORD=123456
 export SMTP_USERNAME=abcdef
+
+# Keycloak Gateway Settings
+export KEYCLOAK_GATEWAY_URL=localhost
+export KEYCLOAK_GATEWAY_PORT=8281
+export KEYCLOAK_GATEWAY_SECRET=r4MBE75Axgsiu143HGvgQ1qlK6B9LCj5
 ```
 
 ## Applying Changes

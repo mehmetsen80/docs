@@ -29,6 +29,17 @@
         ]
       },
       {
+        "tab": "Deploy & Run",
+        "groups": [
+          {
+            "group": "Deployment Options",
+            "pages": [
+              "deploy/standalone"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "API Reference",
         "groups": [
           {
@@ -45,8 +56,8 @@
           {
             "group": "OpenAPI Reference",
             "openapi": {
-              "source": "openapi.json"
-         
+              "source": "openapi.json",
+              "directory": "api-reference"
             }
           },
           {
