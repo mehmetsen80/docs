@@ -133,7 +133,9 @@ java -Djavax.net.ssl.trustStore="$GATEWAY_TRUST_STORE" -Djavax.net.ssl.trustStor
 
 Note that we are not simply using 'java -jar FileName.jar' because SSL requires the truststore parameters to be provided on the command line. These parameters:
 
+```bash
 -Djavax.net.ssl.trustStore="$CLIENT_TRUST_STORE" -Djavax.net.ssl.trustStorePassword="$CLIENT_TRUST_STORE_PASSWORD"
+```
 
 are necessary for establishing secure SSL connections between services. Without them, the applications would fail with SSL handshake errors.
 
