@@ -1,0 +1,234 @@
+---
+title: Inventory Service Deployment on EC2
+icon: cloud
+---
+
+## Secrets for GitHub Actions
+
+
+Set the following repository secrets for deployment:
+
+- **EC2_SSH_KEY_PROD**  
+  Get the content of your EC2 PEM file:
+  ```bash
+  sudo vi /Users/mehmetsen/Documents/awspemfiles/yourfile.pem
+  ```
+
+- **HOST_DNS_PROD**  
+  ```
+  ec2-XX-XXX-XX-XXX.us-west-2.compute.amazonaws.com
+  ```
+
+- **USERNAME_PROD**  
+  ```
+  ubuntu
+  ```
+
+- **TARGET_DIR_PROD**  
+  ```
+  /var/www/product-service
+  ```
+
+## Docker Maintenance
+
+Delete all Docker-related data (network, volume, image):
+
+```bash
+docker system prune -a -f
+```
+
+## Build and Run Inventory Service
+
+To build and start only the inventory-service container:
+
+```bash
+sudo docker compose up -d --build inventory-service
+```
+
+To check the logs:
+
+```bash
+sudo docker logs inventory-service
+```
+
+## Health Check from API Gateway
+
+Check inventory service health from within the API Gateway container:
+
+```bash
+docker exec -it linqra-api-gateway-service-1 curl -k -v https://api-gateway-service:7777/r/inventory-service/health
+```
+
+Or, if you want to include a Bearer token (not required when calling from the API Gateway container):
+
+```bash
+docker exec -it linqra-api-gateway-service-1 curl -k -H "Authorization: Bearer <ACCESS_TOKEN>" -v https://api-gateway-service:7777/r/inventory-service/health
+```
+
+Note: The Bearer token is not required when making requests from within the API Gateway container as they are on the same network.
+
+## CI/CD Configuration
+
+The inventory service uses GitHub Actions for continuous integration and deployment. Here's the complete CI/CD configuration:
+
+```yaml
+name: Linqra Inventory Service CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: write
+
+jobs:
+  java-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Upload Inventory Service source files
+      - name: Upload Inventory Service source
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-service-source
+          path: |
+            .
+      
+      # Upload docker-compose.yml
+      - name: Upload docker-compose file
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-compose
+          path: docker-compose-ec2.yml
+
+      # Upload root pom.xml
+      - name: Upload root pom file
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-pom
+          path: pom.xml
+
+      # Debug and upload .kube directory with hidden files
+      - name: Debug .kube directory
+        run: |
+          echo "Checking .kube directory contents:"
+          ls -la .kube/
+
+      - name: Copy .kube to temporary directory
+        run: |
+          cp -r .kube kube-config
+
+      - name: Upload kube directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: kube-config
+          path: kube-config/**
+
+      # Add this new step to upload keys directory
+      - name: Upload keys directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: keys-config
+          path: keys/
+          if-no-files-found: error
+
+  deploy:
+    needs: [java-app]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY_PROD }}
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.HOST_DNS_PROD }}
+          EC2_USERNAME: ${{ secrets.USERNAME_PROD }}
+          TARGET_DIR: ${{ secrets.TARGET_DIR_PROD }}
+        run: |
+          # Disable strict host key checking
+          mkdir -p ~/.ssh
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+          
+          # Ensure the target directory exists
+          ssh $EC2_USERNAME@$EC2_HOST "sudo mkdir -p /var/www/inventory-service && sudo chown -R $EC2_USERNAME:$EC2_USERNAME /var/www/inventory-service && sudo chmod -R 755 /var/www/inventory-service"
+          
+          # Rsync main directories
+          rsync -avz --delete artifacts/inventory-service-source/ $EC2_USERNAME@$EC2_HOST:/var/www/inventory-service
+          
+          # Use rsync for sensitive files
+          rsync -avz artifacts/docker-compose/docker-compose-ec2.yml $EC2_USERNAME@$EC2_HOST:/var/www/inventory-service/docker-compose.yml
+          rsync -avz artifacts/root-pom/pom.xml $EC2_USERNAME@$EC2_HOST:/var/www/inventory-service/pom.xml
+          
+          # .kube and keys (if needed, use scp or rsync as appropriate)
+          if [ -d "artifacts/kube-config" ]; then
+            rsync -avz --delete --rsync-path="sudo rsync" artifacts/kube-config/ $EC2_USERNAME@$EC2_HOST:/var/www/inventory-service/.kube/
+          fi
+          if [ -d "artifacts/keys-config" ]; then
+            rsync -avz --delete --rsync-path="sudo rsync" artifacts/keys-config/ $EC2_USERNAME@$EC2_HOST:/var/www/inventory-service/keys/
+          fi
+          
+          ssh $EC2_USERNAME@$EC2_HOST "
+            # Set permissions
+            sudo chown -R ubuntu:ubuntu /var/www/inventory-service
+            sudo chmod -R 600 /var/www/inventory-service/keys/* || echo 'No keys to set permissions for'
+            sudo find /var/www/inventory-service/keys -type d -exec chmod 755 {} \;
+            sudo find /var/www/inventory-service/keys -type f -exec chmod 600 {} \;
+          
+            # Move to the deployment directory
+            cd /var/www/inventory-service
+          
+            # Prune unused images/containers/volumes/networks
+            echo 'Pruning unused images/containers/volumes/networks'
+            sudo docker system prune -a -f
+          
+            # Check disk usage
+            echo 'Checking disk usage'
+            df -hT
+
+            # Ensure the Docker network exists
+            echo 'Ensuring the Docker network exists'
+            sudo docker network create linqra-network || true
+          
+            # Build and start containers
+            echo 'Building and starting containers'
+            sudo docker compose -f docker-compose.yml -p linqra up -d --build inventory-service
+          
+            # Check if containers are running
+            echo 'Checking if containers are running'
+            docker ps
+          "
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+```
+
+This CI/CD pipeline:
+1. Triggers on pushes to master and pull requests
+2. Uploads necessary files as artifacts
+3. Deploys to EC2 when changes are pushed to master
+4. Includes dependency review for pull requests
+5. Handles sensitive files and permissions appropriately
+6. Manages Docker containers and networking
+
+The pipeline requires the following GitHub secrets to be configured:
+- `EC2_SSH_KEY_PROD`
+- `HOST_DNS_PROD`
+- `USERNAME_PROD`
+- `TARGET_DIR_PROD`
