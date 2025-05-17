@@ -188,9 +188,11 @@ Now you need to assign both the client and realm roles to the service account:
   Make sure to assign both roles as they are essential for the gateway's proper operation. Missing role assignments can lead to authentication failures.
 </Warning>
 
-### 6. Create Client Scope
+### 6. Create Client Scopes
 
-Next, create a client scope to define the gateway read permissions:
+Next, create the necessary client scopes for gateway and team-based access control.
+
+#### a. Gateway Read Scope
 
 1. Navigate to "Client scopes" in the left sidebar
 2. Click "Create client scope"
@@ -211,6 +213,47 @@ Next, create a client scope to define the gateway read permissions:
 
 <Note>
   Client scopes help in defining sets of protocol mappers and role scope mappings that can be shared between multiple clients. The `gateway.read` scope provides the necessary permissions for reading gateway endpoints.
+</Note>
+
+#### b. Team Scope
+
+1. In the "Client scopes" section, click "Create client scope" again.
+2. Configure the scope:
+   - Name: `team.scope`
+   - Description: `Restricts access to specific teams`
+   - Type: `Default`
+   - Display on consent screen: `ON`
+   - Include in token scope: `ON`
+3. Click "Save"
+
+<Frame>
+  <img src="/images/kc_teamsscope.png" alt="Creating team.scope client scope" />
+</Frame>
+
+Now, add a hardcoded claim mapper to this scope:
+
+1. Go to the `team.scope` client scope you just created.
+2. Navigate to the "Mappers" tab.
+3. Click "Create" to add a new mapper.
+4. Configure the mapper:
+   - Name: `teams`
+   - Category: `Token mapper`
+   - Mapper Type: `Hardcoded claim`
+   - Claim name: `teams`
+   - Claim value: `["67d0aeb17172416c411d419e"]`
+   - Claim JSON type: `JSON`
+   - Add to ID token: `ON`
+   - Add to access token: `ON`
+   - Add to userinfo: `ON`
+5. Click "Save"
+
+<Frame>
+  <img src="/images/kc_teamsscopemapper.png" alt="Creating teams hardcoded claim mapper in team.scope" />
+</Frame>
+
+<Note>
+  You can add more team IDs in the claim value as a comma-separated list, e.g. `["teamid1","teamid2"]`.  
+  This provides an extra layer of security, ensuring that only users belonging to the specified teams can access the application.
 </Note>
 
 ### 7. Assign Roles to Client Scope
@@ -248,9 +291,9 @@ After creating the client scope, you need to assign both client and realm roles 
   If no role scope mapping is defined, any user can use this client scope. Adding role mappings restricts the scope to users with the specified roles.
 </Warning>
 
-### 8. Add Client Scope to Client
+### 8. Add Client Scopes to Client
 
-Finally, you need to add the `gateway.read` scope to the `linqra-gateway-client`:
+Finally, you need to add both the `gateway.read` and `team.scope` scopes to the `linqra-gateway-client`:
 
 1. Navigate to the `linqra-gateway-client` settings
 2. Go to the "Client scopes" tab
@@ -259,16 +302,17 @@ Finally, you need to add the `gateway.read` scope to the `linqra-gateway-client`
    - Find and select `gateway.read`
    - Make sure it's set as "Default"
    - Click "Add"
+5. Repeat the process to add `team.scope` as a "Default" client scope as well
 
 <Frame>
   <img 
     src="/images/kc_add_client_scope_to_the_client.png" 
-    alt="Adding gateway.read scope to linqra-gateway-client" 
+    alt="Adding gateway.read and team.scope to linqra-gateway-client" 
   />
 </Frame>
 
 <Note>
-  Setting the scope as "Default" means it will be automatically included in every token request for this client, ensuring the gateway always has the necessary permissions.
+  Setting both scopes as "Default" ensures they will be automatically included in every token request for this client, providing both endpoint and team-based access control.
 </Note>
 
 <Warning>

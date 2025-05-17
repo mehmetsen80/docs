@@ -36,6 +36,15 @@
             "pages": [
               "deploy/standalone"
             ]
+          },
+          {
+            "group": "Dockerization",
+            "pages": [
+              "deploy/dockerization/localhost",
+              "deploy/dockerization/ec2deployment",
+              "deploy/dockerization/productservice",
+              "deploy/dockerization/inventoryservice"
+            ]
           }
         ]
       },
