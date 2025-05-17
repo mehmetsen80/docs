@@ -692,7 +692,141 @@ You should now see the `Linqra` database listed.
 
 ---
 
-Let me know if you want to add more details or further steps! 
+## 15. Keycloak Configuration for EC2
+
+### Access Keycloak Admin Console
+
+Access the Keycloak Admin Console at:
+```bash
+https://linqra.com/keycloak/admin/master/console/
+```
+
+### 1. Create New Realm
+
+1. Log in to the Keycloak Admin Console
+2. Click on the dropdown in the top-left corner (default shows "master")
+3. Click "Create Realm"
+4. Configure the realm:
+   - Realm name: `Linqra`
+   - Display name: `Linqra`
+   - Frontend URL: `https://linqra.com/keycloak`
+5. Ensure "Enabled" is switched ON
+6. Click "Create"
+
+### 2. Create New Client
+
+#### General Settings
+1. Navigate to "Clients" in the left sidebar
+2. Click "Create client"
+3. Configure the general settings:
+   - Client ID: `linqra-gateway-client`
+   - Name: `Linqra Gateway Client`
+   - Description: `Linqra Gateway Client`
+   - Always display in UI: `ON`
+   - Click "Next"
+
+#### Access Settings
+Configure the client's access settings:
+- Root URL: `https://linqra.com`
+- Home URL: `https://linqra.com`
+- Valid redirect URIs: `https://linqra.com/callback`
+- Valid post logout redirect URIs: `https://linqra.com`
+- Web origins: `https://linqra.com`
+- Admin URL: `https://linqra.com`
+
+#### Capability Config
+Set up the authentication capabilities:
+- Client authentication: `ON`
+- Authorization: `OFF`
+- Authentication flow:
+  - Standard flow: `Enabled`
+  - Service accounts roles: `Enabled`
+  - All other flows: `Disabled`
+
+### 3. Create Client Role
+
+1. Navigate to the "Roles" tab in your client settings
+2. Click "Create role"
+3. Configure the role:
+   - Role name: `gateway_admin`
+   - Description: `Gateway admin role for the client id: linqra-gateway-client`
+4. Click "Save"
+
+### 4. Create Realm Role
+
+1. Navigate to "Realm roles" in the left sidebar
+2. Click "Create role"
+3. Configure the role:
+   - Role name: `gateway_admin_realm`
+   - Description: `Role to identify the belongings of the Linqra realm`
+4. Click "Save"
+
+### 5. Assign Service Account Roles
+
+1. Navigate to your client's "Service accounts roles" tab
+2. You'll see the service account username: `service-account-linqra-gateway-client`
+3. Assign both roles:
+   - Client role: `gateway_admin`
+   - Realm role: `gateway_admin_realm`
+
+### 6. Create Client Scopes
+
+#### a. Gateway Read Scope
+1. Navigate to "Client scopes" in the left sidebar
+2. Click "Create client scope"
+3. Configure the scope:
+   - Name: `gateway.read`
+   - Description: `To read the gateway end points`
+   - Type: `Default`
+   - Display on consent screen: `ON`
+   - Include in token scope: `ON`
+4. Click "Save"
+
+#### b. Team Scope
+1. Create another client scope:
+   - Name: `team.scope`
+   - Description: `Restricts access to specific teams`
+   - Type: `Default`
+   - Display on consent screen: `ON`
+   - Include in token scope: `ON`
+
+2. Add a hardcoded claim mapper:
+   - Name: `teams`
+   - Category: `Token mapper`
+   - Mapper Type: `Hardcoded claim`
+   - Claim name: `teams`
+   - Claim value: `["67d0aeb17172416c411d419e"]`
+   - Claim JSON type: `JSON`
+   - Add to ID token: `ON`
+   - Add to access token: `ON`
+   - Add to userinfo: `ON`
+
+### 7. Assign Roles to Client Scope
+
+1. Navigate to the `gateway.read` client scope
+2. Go to the "Scope" tab
+3. Assign both roles:
+   - Client role: `gateway_admin`
+   - Realm role: `gateway_admin_realm`
+
+### 8. Add Client Scopes to Client
+
+1. Navigate to the `linqra-gateway-client` settings
+2. Go to the "Client scopes" tab
+3. Add both scopes as "Default":
+   - `gateway.read`
+   - `team.scope`
+
+<Note>
+  The configuration above is specific to the EC2 deployment environment. Make sure all URLs are using `https://linqra.com` instead of localhost URLs.
+</Note>
+
+<Warning>
+  After configuring Keycloak, you may need to restart the Keycloak service to ensure all changes take effect:
+  ```bash
+  sudo docker compose up -d --build keycloak-service
+  ```
+</Warning>
 
 ## 16. Useful Docker Commands and Maintenance
 
