@@ -127,62 +127,190 @@ Example configuration:
 
 ```nginx
 server {
-    server_name     linqra.com www.linqra.com;
-    listen          80;
-    listen          [::]:80;
-    return  301     https://linqra.com$request_uri;
+        server_name     linqra.com www.linqra.com;
+        listen          80;
+        listen          [::]:80;
+        return  301     https://linqra.com$request_uri;
 }
 
 server {
-    server_name     www.linqra.com;
-    listen  443 ssl;
-    listen  [::]:443 ssl;
-    ssl_certificate         /etc/pki/tls/certs/2025/linqrachained2025.crt;
-    ssl_certificate_key     /etc/pki/tls/certs/2025/linqra.key;
-    ssl_protocols TLSv1.2 TLSv1.1;
-    return 301      https://pulsetee.com$request_uri;
+        server_name     www.linqra.com;
+        listen  443 ssl;
+        listen  [::]:443 ssl;
+        ssl_certificate         /etc/pki/tls/certs/2025/linqrachained2025.crt;
+        ssl_certificate_key     /etc/pki/tls/certs/2025/linqra.key;
+        ssl_protocols TLSv1.2 TLSv1.1;
+        return 301      https://linqra.com$request_uri;
 }
 
 server {
-    listen       443    ssl;
-    ssl_certificate         /etc/pki/tls/certs/2025/linqrachained2025.crt;
-    ssl_certificate_key     /etc/pki/tls/certs/2025/linqra.key;
-    ssl_protocols TLSv1.2 TLSv1.1;
-    server_name  linqra.com;
-    root   /var/www/linqra/edge-service;
-    index index.html;
+        listen       443    ssl;
+        ssl_certificate         /etc/pki/tls/certs/2025/linqrachained2025.crt;
+        ssl_certificate_key     /etc/pki/tls/certs/2025/linqra.key;
+        ssl_protocols TLSv1.2 TLSv1.1;
+        server_name  linqra.com;
 
-    # Logs
-    access_log /var/www/linqra/logs/access.log;
-    error_log /var/www/linqra/logs/error.log;
 
-    # Handle favicon.ico
-    location = /favicon.ico {
-        log_not_found off;
-        access_log off;
-    }
+        # Increase buffer sizes
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+        proxy_max_temp_file_size 0;
+        proxy_http_version 1.1;
 
-    # Handle React Router
-    location / {
-        try_files $uri /index.html =404;
+        # Increase header buffer size
+        large_client_header_buffers 4 16k;
+        client_header_buffer_size 4k;
+        client_max_body_size 50M;
 
-        # Basic security headers
-        add_header X-Frame-Options "SAMEORIGIN";
-        add_header X-XSS-Protection "1; mode=block";
-        add_header X-Content-Type-Options "nosniff";
-    }
+        # Logs
+        access_log /var/www/linqra/logs/access.log;
+        error_log /var/www/linqra/logs/error.log;
 
-    # Cache static assets
-    location /static/ {
-        expires 1y;
-        add_header Cache-Control "public, no-transform";
-    }
 
-    # Deny access to sensitive files
-    location ~ /\. {
-        deny all;
-    }
+        location /keycloak/ {
+                proxy_pass http://localhost:8281;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto https;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+
+                # Add this rewrite rule to handle the redirect
+                proxy_redirect http://localhost:8281 https://linqra.com/keycloak;
+
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+
+                proxy_redirect http:// https://;
+        }
+
+        # Handle realms paths
+        location /realms/ {
+                rewrite ^/realms/(.*) /keycloak/realms/$1 last;
+        }
+
+        # Handle resources paths
+        location /resources/ {
+                rewrite ^/resources/(.*) /keycloak/resources/$1 last;
+        }
+
+        # Handle admin paths
+        location /admin/ {
+                rewrite ^/admin/(.*) /keycloak/admin/$1 last;
+        }
+
+
+        location /eureka/ {
+                proxy_pass https://localhost:8761/eureka/;
+                proxy_ssl_verify off;  # Only if using self-signed certs
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto https;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location /api/auth/sso/callback {
+                proxy_pass https://localhost:7777/api/auth/sso/callback;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_ssl_verify off;  # Since you're using self-signed certs
+        }
+
+        location /api/ {
+                proxy_pass https://localhost:7777/api/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /metrics/ {
+                proxy_pass https://localhost:7777/metrics/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /ws-linqra {
+                proxy_pass https://localhost:7777/ws-linqra;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_ssl_verify off;  # Only if using self-signed certs
+        }
+
+        location /callback {
+                root /var/www/linqra/edge-service;
+                try_files $uri $uri/ /index.html;
+
+                # Add necessary headers
+                add_header X-Frame-Options "SAMEORIGIN";
+                add_header X-XSS-Protection "1; mode=block";
+                add_header X-Content-Type-Options "nosniff";
+
+                # Ensure proper proxy headers
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+
+        location /r/ {
+                proxy_pass https://localhost:7777/r/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_ssl_verify off;  # Only if using self-signed certs
+        }
+
+
+        location /linq {
+                proxy_pass https://localhost:7777/linq;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Api-Key $http_x_api_key;
+                proxy_set_header X-Api-Key-Name $http_x_api_key_name;
+                proxy_ssl_verify off;
+        }
+
+
+        location / {
+                root /var/www/linqra/edge-service;
+                try_files $uri $uri/ /index.html;
+
+                # Basic security headers
+                add_header X-Frame-Options "SAMEORIGIN";
+                add_header X-XSS-Protection "1; mode=block";
+                add_header X-Content-Type-Options "nosniff";
+        }
+
+        # Static assets
+        location /static/ {
+                root /var/www/html/linqra/edge-service;
+                expires 1y;
+                add_header Cache-Control "public, no-transform";
+        }
+
+        # Deny access to sensitive files
+        location ~ /\. {
+                deny all;
+        }
 }
+
 ```
 
 ---

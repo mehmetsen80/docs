@@ -70,12 +70,19 @@
             }
           },
           {
-            "group": "Endpoint Examples",
+            "group": "Inventory Service",
             "pages": [
-              "api-reference/endpoint/getall",
-              "api-reference/endpoint/getitem",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete"
+              "api-reference/endpoint/inventory/getall",
+              "api-reference/endpoint/inventory/getitem",
+              "api-reference/endpoint/inventory/create",
+              "api-reference/endpoint/inventory/delete"
+            ]
+          },
+          {
+            "group": "Product Service",
+            "pages": [
+              "api-reference/endpoint/product/getall",
+              "api-reference/endpoint/product/getitem"
             ]
           }
         ]
