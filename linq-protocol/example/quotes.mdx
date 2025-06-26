@@ -1,0 +1,870 @@
+---
+title: 'Quotes Service RAG Workflow'
+description: 'Complete guide to building RAG workflows with the Linq Protocol using quotes service'
+icon: 'workflow'
+---
+
+
+This guide demonstrates how to build sophisticated RAG (Retrieval-Augmented Generation) workflows using the Linq Protocol, starting from basic quote generation to advanced semantic search and storage systems.
+
+
+
+## Initial Setup
+
+### Create Milvus Collection
+
+Before building workflows, you need to create a Milvus collection for storing quotes with embeddings:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://localhost:7777/api/milvus/collections \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "x-api-key: [API Key]" \
+    -H "x-api-key-name: [API KEY NAME]" \
+    -d '{
+      "collectionName": "famous_quotes_openai_text_embedding_3_small_1536",
+      "schemaFields": [
+        {"name": "id", "dtype": "INT64", "is_primary": true},
+        {"name": "person_name", "dtype": "VARCHAR", "max_length": 100},
+        {"name": "quote_text", "dtype": "VARCHAR", "max_length": 1000},
+        {"name": "context", "dtype": "VARCHAR", "max_length": 500},
+        {"name": "category", "dtype": "VARCHAR", "max_length": 50},
+        {"name": "embedding", "dtype": "FLOAT_VECTOR", "dim": 1536}
+      ],
+      "description": "Famous quotes with embeddings for semantic search",
+      "teamId": "67d0aeb17172416c411d419e"
+    }'
+  ```
+
+  ```python Python
+  import requests
+
+  url = "https://localhost:7777/api/milvus/collections"
+  payload = {
+    "collectionName": "famous_quotes_openai_text_embedding_3_small_1536",
+    "schemaFields": [
+      {"name": "id", "dtype": "INT64", "is_primary": True},
+      {"name": "person_name", "dtype": "VARCHAR", "max_length": 100},
+      {"name": "quote_text", "dtype": "VARCHAR", "max_length": 1000},
+      {"name": "context", "dtype": "VARCHAR", "max_length": 500},
+      {"name": "category", "dtype": "VARCHAR", "max_length": 50},
+      {"name": "embedding", "dtype": "FLOAT_VECTOR", "dim": 1536}
+    ],
+    "description": "Famous quotes with embeddings for semantic search",
+    "teamId": "67d0aeb17172416c411d419e"
+  }
+  headers = {
+    "Authorization": "Bearer YOUR_TOKEN",
+    "x-api-key": "[API Key]",
+    "x-api-key-name": "[API KEY NAME]",
+    "Content-Type": "application/json"
+  }
+
+  response = requests.post(url, json=payload, headers=headers)
+  print(response.json())
+  ```
+</CodeGroup>
+
+<Note>
+  This collection setup is a one-time operation. Once created, it will be available for all your RAG workflows.
+</Note>
+
+## Basic Historical Saying Generator
+
+### Create Workflow Definition
+
+Start with a simple 2-step workflow that generates inspirational quotes from historical figures:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://localhost:7777/linq/workflows \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "x-api-key: [API Key]" \
+    -H "x-api-key-name: [API KEY NAME]" \
+    -d '{
+      "name": "Quotes of Famous People",
+      "description": "Generate inspirational quotes from historical figures",
+      "request": {
+        "link": {
+          "target": "workflow",
+          "action": "execute"
+        },
+        "query": {
+          "intent": "get_historical_saying",
+          "params": {
+            "topic": "psychology"
+          },
+          "workflow": [
+            {
+              "step": 1,
+              "target": "quotes-service",
+              "action": "fetch",
+              "intent": "/api/people/random",
+              "params": {},
+              "cacheConfig": {
+                "enabled": true,
+                "ttl": "86400",
+                "key": "historical_people_cache"
+              }
+            },
+            {
+              "step": 2,
+              "target": "openai",
+              "action": "generate",
+              "intent": "generate",
+              "params": {
+                "prompt": "Output only a single inspirational saying by {{step1.result.fullName}} about {{params.topic}}. Do not include any other text, explanation, or formatting. Do not use quotation marks. Only the saying."
+              },
+              "payload": [
+                {
+                  "role": "user",
+                  "content": "Output only a single inspirational saying by {{step1.result.fullName}} about {{params.topic}}. Do not include any other text, explanation, or formatting. Do not use quotation marks. Only the saying."
+                }
+              ],
+              "toolConfig": {
+                "model": "gpt-4o",
+                "settings": {
+                  "temperature": 0.9,
+                  "max_tokens": 200
+                }
+              }
+            }
+          ]
+        }
+      },
+      "isPublic": false
+    }'
+  ```
+
+  ```json JSON Response
+  {
+    "id": "6857750f023fa3190a2d63a5",
+    "name": "Quotes of Famous People",
+    "description": "Generate inspirational quotes from historical figures",
+    "teamId": "67d0aeb17172416c411d419e",
+    "request": {
+      "link": {
+        "target": "workflow",
+        "action": "execute"
+      },
+      "query": {
+        "intent": "get_historical_saying",
+        "workflowId": "6857750f023fa3190a2d63a5",
+        "params": {
+          "topic": "psychology",
+          "teamId": "67d0aeb17172416c411d419e"
+        },
+        "workflow": [
+          {
+            "step": 1,
+            "target": "quotes-service",
+            "action": "fetch",
+            "intent": "/api/people/random",
+            "params": {},
+            "cacheConfig": {
+              "enabled": true,
+              "ttl": "86400",
+              "key": "historical_people_cache"
+            }
+          },
+          {
+            "step": 2,
+            "target": "openai",
+            "action": "generate",
+            "intent": "generate",
+            "params": {
+              "prompt": "Output only a single inspirational saying by {{step1.result.fullName}} about {{params.topic}}. Do not include any other text, explanation, or formatting. Do not use quotation marks. Only the saying."
+            },
+            "payload": [
+              {
+                "role": "user",
+                "content": "Output only a single inspirational saying by {{step1.result.fullName}} about {{params.topic}}. Do not include any other text, explanation, or formatting. Do not use quotation marks. Only the saying."
+              }
+            ],
+            "toolConfig": {
+              "model": "gpt-4o",
+              "settings": {
+                "temperature": 0.9,
+                "max_tokens": 200
+              }
+            }
+          }
+        ]
+      }
+    },
+    "createdAt": [2025, 6, 21, 22, 14, 23, 776137000],
+    "updatedAt": [2025, 6, 21, 22, 14, 23, 776263000],
+    "createdBy": "timursen",
+    "updatedBy": "timursen",
+    "version": 1,
+    "public": false
+  }
+  ```
+</CodeGroup>
+
+<Note>
+  The system automatically adds several fields when saving the workflow:
+  - **`id`**: Auto-generated MongoDB ObjectId
+  - **`teamId`**: Set from current user's team context
+  - **`workflowId`**: Added to query (same as document ID)
+  - **`params.teamId`**: Added to query parameters for team context
+  - **`createdAt`/`updatedAt`**: Timestamps in MongoDB format
+  - **`createdBy`/`updatedBy`**: Username of creator/updater
+  - **`version`**: Starts at 1 for new workflows
+  - **`public`**: Boolean flag for workflow visibility
+</Note>
+
+### Execute the Workflow
+
+Once created, execute the workflow using the returned ID:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://localhost:7777/linq/workflows/6857750f023fa3190a2d63a5/execute \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "x-api-key: [API Key]" \
+    -H "x-api-key-name: [API KEY NAME]" \
+    -d '{}'
+  ```
+
+  ```json JSON Response
+  {
+    "result": {
+      "steps": [
+        {
+          "step": 1,
+          "target": "quotes-service",
+          "result": {
+            "fullName": "Jean Piaget",
+            "knownAs": "The Child Development Theorist",
+            "birthYear": 1896,
+            "deathYear": 1980,
+            "nationality": "Swiss",
+            "description": "Swiss psychologist known for cognitive development",
+            "category": "Psychologists"
+          }
+        },
+        {
+          "step": 2,
+          "target": "openai",
+          "result": {
+            "id": "chatcmpl-Bl5pQSJZOmm7ItiIUfAHZIl8sXHJv",
+            "object": "chat.completion",
+            "created": 1750563520,
+            "model": "gpt-4o-2024-08-06",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "Understanding is based on the ability to invent and reinvent."
+                }
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 42,
+              "completion_tokens": 11,
+              "total_tokens": 53
+            }
+          }
+        }
+      ],
+      "finalResult": "Understanding is based on the ability to invent and reinvent.",
+      "pendingAsyncSteps": null
+    },
+    "metadata": {
+      "source": null,
+      "status": "success",
+      "teamId": "67d0aeb17172416c411d419e",
+      "cacheHit": false,
+      "workflowMetadata": [
+        {
+          "step": 1,
+          "status": "success",
+          "durationMs": 216,
+          "target": "quotes-service",
+          "executedAt": [2025, 6, 21, 22, 38, 38, 663066000],
+          "tokenUsage": null,
+          "model": null,
+          "async": false
+        },
+        {
+          "step": 2,
+          "status": "success",
+          "durationMs": 2186,
+          "target": "openai",
+          "executedAt": [2025, 6, 21, 22, 38, 40, 849728000],
+          "tokenUsage": {
+            "promptTokens": 42,
+            "completionTokens": 11,
+            "totalTokens": 53
+          },
+          "model": "gpt-4o-2024-08-06",
+          "async": false
+        }
+      ],
+      "asyncSteps": null
+    }
+  }
+  ```
+</CodeGroup>
+
+<Note>
+  This basic workflow demonstrates:
+  - **Step Results**: Each step shows actual results from services
+  - **Final Result**: Clean quote text extracted from OpenAI response
+  - **Metadata**: Detailed execution information including duration and token usage
+  - **Caching**: Step 1 uses caching to avoid repeated API calls
+</Note>
+
+## Advanced RAG Workflow
+
+### Historical Figure Data Storage
+
+This workflow demonstrates RAG preparation by storing historical figure data in Milvus for future semantic search:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://localhost:7777/linq/workflows \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "x-api-key: [API Key]" \
+    -H "x-api-key-name: [API KEY NAME]" \
+    -d '{
+      "name": "Historical Figure Data Storage",
+      "description": "Store historical figure data in Milvus for RAG operations",
+      "request": {
+        "link": {
+          "target": "workflow",
+          "action": "execute"
+        },
+        "query": {
+          "intent": "store_historical_figure",
+          "params": {
+            "topic": "relationships"
+          },
+          "workflow": [
+            {
+              "step": 1,
+              "target": "quotes-service",
+              "action": "fetch",
+              "intent": "/api/people/random",
+              "params": {},
+              "cacheConfig": {
+                "enabled": false,
+                "ttl": "86400",
+                "key": "historical_people_cache"
+              }
+            },
+            {
+              "step": 2,
+              "target": "api-gateway",
+              "action": "create",
+              "intent": "/api/milvus/collections/historical_figures_openai_text_embedding_3_small_1536/records",
+              "payload": {
+                "record": {
+                  "fullName": "{{step1.result.fullName}}",
+                  "knownAs": "{{step1.result.knownAs}}",
+                  "birthYear": "{{step1.result.birthYear}}",
+                  "deathYear": "{{step1.result.deathYear}}",
+                  "nationality": "{{step1.result.nationality}}",
+                  "description": "{{step1.result.description}}",
+                  "category": "{{step1.result.category}}"
+                },
+                "targetTool": "openai-embed",
+                "modelType": "text-embedding-3-small",
+                "textField": "description",
+                "teamId": "{{params.teamId}}"
+              }
+            },
+            {
+              "step": 3,
+              "target": "openai",
+              "action": "generate",
+              "intent": "generate",
+              "params": {
+                "prompt": "Output only a single inspirational saying by {{step1.result.fullName}}. Do not include any other text, explanation, or formatting. Do not use quotation marks. Only the saying."
+              },
+              "payload": [
+                {
+                  "role": "user",
+                  "content": "Output only a single inspirational saying by {{step1.result.fullName}}. Do not include any other text, explanation, or formatting. Do not use quotation marks. Only the saying."
+                }
+              ],
+              "toolConfig": {
+                "model": "gpt-4o",
+                "settings": {
+                  "temperature": 0.9,
+                  "max_tokens": 200
+                }
+              }
+            }
+          ]
+        }
+      },
+      "isPublic": false
+    }'
+  ```
+</CodeGroup>
+
+<Warning>
+  This workflow builds a knowledge base over time. Each execution adds a new historical figure to the Milvus collection for future semantic search operations.
+</Warning>
+
+### Enhanced RAG Workflow with Smart Retrieval
+
+The most advanced workflow combines retrieval and generation intelligently:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://localhost:7777/linq/workflows \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "x-api-key: [API Key]" \
+    -H "x-api-key-name: [API KEY NAME]" \
+    -d '{
+      "name": "Smart Historical Saying Generator (RAG)",
+      "description": "Generates inspirational sayings using RAG for diversity and quality",
+      "request": {
+        "link": {
+          "target": "workflow",
+          "action": "execute"
+        },
+        "query": {
+          "intent": "get_smart_historical_saying",
+          "params": {
+            "topic": "relationships"
+          },
+          "workflow": [
+            {
+              "step": 1,
+              "target": "quotes-service",
+              "action": "fetch",
+              "intent": "/api/people/random",
+              "params": {},
+              "cacheConfig": {
+                "enabled": false,
+                "ttl": "86400",
+                "key": "historical_people_cache"
+              }
+            },
+            {
+              "step": 2,
+              "target": "api-gateway",
+              "action": "create",
+              "intent": "/api/milvus/collections/famous_quotes_openai_text_embedding_3_small_1536/search",
+              "payload": {
+                "textField": "quotetext",
+                "text": "{{params.topic}}",
+                "teamId": "{{params.teamId}}",
+                "targetTool": "openai-embed",
+                "modelType": "text-embedding-3-small"
+              }
+            },
+            {
+              "step": 3,
+              "target": "openai",
+              "action": "generate",
+              "intent": "generate",
+              "payload": [
+                {
+                  "role": "system",
+                  "content": "You are a quote generator and analyzer. Your job is to either return an existing relevant quote from the search results (if it is from someone other than the randomly selected person) or generate a new quote by the randomly selected person."
+                },
+                {
+                  "role": "user",
+                  "content": "Random person: {{step1.result.fullName}}\nTopic: {{params.topic}}\nSearch results: {{step2.result.results}}\nTotal found: {{step2.result.total_results}}\n\nIf the search results contain relevant quotes from people other than {{step1.result.fullName}}, return the most relevant one. If no relevant quotes found from other people, generate a new inspirational quote by {{step1.result.fullName}} about {{params.topic}}. Return only the quote text, no explanations."
+                }
+              ],
+              "toolConfig": {
+                "model": "gpt-4o",
+                "settings": {
+                  "temperature": 0.8,
+                  "max_tokens": 200
+                }
+              }
+            },
+            {
+              "step": 4,
+              "target": "openai",
+              "action": "generate",
+              "intent": "generate",
+              "payload": [
+                {
+                  "role": "system",
+                  "content": "You are a language detection expert. Your task is to detect the language of the given text and return ONLY the ISO 639-1 language code (e.g., \"en\", \"es\", \"fr\", \"de\", \"it\", \"pt\", \"ru\", \"ja\", \"ko\", \"zh\"). Do not include any explanations, punctuation, or additional text."
+                },
+                {
+                  "role": "user",
+                  "content": "Detect the language of this quote: {{step3.result.choices[0].message.content}}"
+                }
+              ],
+              "toolConfig": {
+                "model": "gpt-4o",
+                "settings": {
+                  "temperature": 0.1,
+                  "max_tokens": 10
+                }
+              }
+            },
+            {
+              "step": 5,
+              "target": "api-gateway",
+              "action": "create",
+              "intent": "/api/milvus/collections/famous_quotes_openai_text_embedding_3_small_1536/records",
+              "payload": {
+                "record": {
+                  "personname": "{{step1.result.fullName}}",
+                  "quotetext": "{{step3.result.choices[0].message.content}}",
+                  "context": "Generated quote about {{params.topic}}",
+                  "category": "{{params.topic}}",
+                  "source": "generated",
+                  "language": "{{step4.result.choices[0].message.content}}",
+                  "teamid": "{{params.teamId}}",
+                  "tags": "{{params.topic}},{{step4.result.choices[0].message.content}},generated,inspirational"
+                },
+                "targetTool": "openai-embed",
+                "modelType": "text-embedding-3-small",
+                "textField": "quotetext",
+                "teamId": "{{params.teamId}}"
+              }
+            }
+          ]
+        }
+      },
+      "isPublic": false
+    }'
+  ```
+</CodeGroup>
+
+<Note>
+  This advanced workflow demonstrates:
+  - **Smart Retrieval**: Finds existing relevant quotes before generating new ones
+  - **Diversity**: Uses quotes from different people to avoid repetition
+  - **Quality Assurance**: Reuses proven, existing quotes when available
+  - **Language Detection**: Automatically detects and tags quote language
+  - **Comprehensive Storage**: Stores results with rich metadata for future use
+</Note>
+
+## Workflow Execution Results
+
+### Basic Workflow Response
+
+Here's the complete execution response from the basic workflow:
+
+```json
+{
+  "result": {
+    "steps": [
+      {
+        "step": 1,
+        "target": "quotes-service",
+        "result": {
+          "fullName": "Jean Piaget",
+          "knownAs": "The Child Development Theorist",
+          "birthYear": 1896,
+          "deathYear": 1980,
+          "nationality": "Swiss",
+          "description": "Swiss psychologist known for cognitive development",
+          "category": "Psychologists"
+        }
+      },
+      {
+        "step": 2,
+        "target": "openai",
+        "result": {
+          "id": "chatcmpl-Bl5pQSJZOmm7ItiIUfAHZIl8sXHJv",
+          "object": "chat.completion",
+          "created": 1750563520,
+          "model": "gpt-4o-2024-08-06",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "Understanding is based on the ability to invent and reinvent."
+              }
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 42,
+            "completion_tokens": 11,
+            "total_tokens": 53
+          }
+        }
+      }
+    ],
+    "finalResult": "Understanding is based on the ability to invent and reinvent.",
+    "pendingAsyncSteps": null
+  },
+  "metadata": {
+    "source": null,
+    "status": "success",
+    "teamId": "67d0aeb17172416c411d419e",
+    "cacheHit": false,
+    "workflowMetadata": [
+      {
+        "step": 1,
+        "status": "success",
+        "durationMs": 216,
+        "target": "quotes-service",
+        "executedAt": [2025, 6, 21, 22, 38, 38, 663066000],
+        "tokenUsage": null,
+        "model": null,
+        "async": false
+      },
+      {
+        "step": 2,
+        "status": "success",
+        "durationMs": 2186,
+        "target": "openai",
+        "executedAt": [2025, 6, 21, 22, 38, 40, 849728000],
+        "tokenUsage": {
+          "promptTokens": 42,
+          "completionTokens": 11,
+          "totalTokens": 53
+        },
+        "model": "gpt-4o-2024-08-06",
+        "async": false
+      }
+    ],
+    "asyncSteps": null
+  }
+}
+```
+
+### Advanced RAG Workflow Response
+
+Here's the complete execution response from the advanced RAG workflow:
+
+```json
+{
+  "result": {
+    "steps": [
+      {
+        "step": 1,
+        "target": "quotes-service",
+        "result": {
+          "fullName": "Atticus Finch",
+          "knownAs": "The Moral Lawyer",
+          "birthYear": 1920,
+          "deathYear": null,
+          "nationality": "American",
+          "description": "Fictional character known for his wisdom and moral guidance in To Kill a Mockingbird",
+          "category": "Characters"
+        }
+      },
+      {
+        "step": 2,
+        "target": "api-gateway",
+        "result": {
+          "found": true,
+          "message": "Found 1 relevant records",
+          "results": [
+            {
+              "quotetext": "\"The relationships we form are the true reflection of our social conditions; they are both the chains that bind us and the forces that set us free.\" - Karl Marx",
+              "distance": 0.0,
+              "match_type": "exact",
+              "id": 1750824666915
+            }
+          ],
+          "search_text": "relationships",
+          "total_results": 1
+        }
+      },
+      {
+        "step": 3,
+        "target": "openai",
+        "result": {
+          "id": "chatcmpl-BmXdd3zg4gPhiUPLdtAzmQhvHjOQ7",
+          "object": "chat.completion",
+          "created": 1750908749,
+          "model": "gpt-4o-2024-08-06",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "\"The relationships we form are the true reflection of our social conditions; they are both the chains that bind us and the forces that set us free.\" - Karl Marx"
+              }
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 184,
+            "completion_tokens": 32,
+            "total_tokens": 216
+          }
+        }
+      },
+      {
+        "step": 4,
+        "target": "openai",
+        "result": {
+          "id": "chatcmpl-BmXde2jQoljYUe5wkO68nTxkvoXKt",
+          "object": "chat.completion",
+          "created": 1750908750,
+          "model": "gpt-4o-2024-08-06",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "en"
+              }
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 126,
+            "completion_tokens": 1,
+            "total_tokens": 127
+          }
+        }
+      },
+      {
+        "step": 5,
+        "target": "api-gateway",
+        "result": {
+          "message": "Record stored successfully in collection famous_quotes_openai_text_embedding_3_small_1536"
+        }
+      }
+    ],
+    "finalResult": "{message=Record stored successfully in collection famous_quotes_openai_text_embedding_3_small_1536}",
+    "pendingAsyncSteps": null
+  },
+  "metadata": {
+    "source": null,
+    "status": "success",
+    "teamId": "67d0aeb17172416c411d419e",
+    "cacheHit": false,
+    "workflowMetadata": [
+      {
+        "step": 1,
+        "status": "success",
+        "durationMs": 62,
+        "target": "quotes-service",
+        "executedAt": [2025, 6, 25, 22, 32, 27, 335161000],
+        "tokenUsage": null,
+        "model": null,
+        "async": false
+      },
+      {
+        "step": 2,
+        "status": "success",
+        "durationMs": 1345,
+        "target": "api-gateway",
+        "executedAt": [2025, 6, 25, 22, 32, 28, 680892000],
+        "tokenUsage": null,
+        "model": null,
+        "async": false
+      },
+      {
+        "step": 3,
+        "status": "success",
+        "durationMs": 1119,
+        "target": "openai",
+        "executedAt": [2025, 6, 25, 22, 32, 29, 800727000],
+        "tokenUsage": {
+          "promptTokens": 184,
+          "completionTokens": 32,
+          "totalTokens": 216
+        },
+        "model": "gpt-4o-2024-08-06",
+        "async": false
+      },
+      {
+        "step": 4,
+        "status": "success",
+        "durationMs": 1055,
+        "target": "openai",
+        "executedAt": [2025, 6, 25, 22, 32, 30, 856447000],
+        "tokenUsage": {
+          "promptTokens": 126,
+          "completionTokens": 1,
+          "totalTokens": 127
+        },
+        "model": "gpt-4o-2024-08-06",
+        "async": false
+      },
+      {
+        "step": 5,
+        "status": "success",
+        "durationMs": 443,
+        "target": "api-gateway",
+        "executedAt": [2025, 6, 25, 22, 32, 31, 300080000],
+        "tokenUsage": null,
+        "model": null,
+        "async": false
+      }
+    ],
+    "asyncSteps": null
+  }
+}
+```
+
+<Note>
+  **Key RAG Features Demonstrated:**
+  - **Smart Retrieval**: Found existing relevant quote instead of generating new one
+  - **Diversity**: Used quote from Karl Marx instead of Atticus Finch to avoid repetition
+  - **Quality**: Reused high-quality existing quote rather than generating potentially inferior new one
+  - **Storage**: Still stored the result for future reference
+  - **Language Detection**: Automatically detected and tagged the quote language
+  - **Metadata**: Added comprehensive tags and categorization
+</Note>
+
+## Key Features
+
+### Step-by-Step Execution
+
+Each workflow step provides detailed results:
+
+- **Step Results**: Actual output from each service
+- **Execution Metadata**: Duration, token usage, and timestamps
+- **Error Handling**: Clear status indicators for each step
+- **Caching**: Configurable caching to optimize performance
+
+### RAG Integration
+
+The workflows demonstrate full RAG capabilities:
+
+- **Semantic Search**: Find relevant existing content
+- **Intelligent Generation**: Create new content when needed
+- **Knowledge Accumulation**: Build databases over time
+- **Quality Optimization**: Balance between retrieval and generation
+
+### Performance Optimization
+
+- **Caching**: Reduce API calls with configurable TTL
+- **Token Management**: Track and optimize OpenAI usage
+- **Async Support**: Handle long-running operations
+- **Team Isolation**: Multi-tenant data security
+
+## Best Practices
+
+### Workflow Design
+
+1. **Start Simple**: Begin with basic workflows and add complexity gradually
+2. **Use Caching**: Enable caching for frequently accessed data
+3. **Error Handling**: Plan for service failures and timeouts
+4. **Team Context**: Always include teamId for multi-tenant isolation
+
+### RAG Implementation
+
+1. **Collection Design**: Plan your Milvus schema carefully
+2. **Embedding Strategy**: Choose appropriate embedding models
+3. **Search Optimization**: Configure similarity thresholds
+4. **Data Quality**: Ensure high-quality training data
+
+### Performance Monitoring
+
+1. **Token Tracking**: Monitor OpenAI usage and costs
+2. **Execution Times**: Track step durations for optimization
+3. **Cache Hit Rates**: Measure caching effectiveness
+4. **Error Rates**: Monitor workflow success rates
+
+<Note>
+  These workflows provide a foundation for building sophisticated AI applications. Start with the basic workflow and gradually implement the advanced features as your needs grow.
+</Note>
+

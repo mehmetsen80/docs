@@ -1,0 +1,245 @@
+---
+title: 'Introduction to Linq Protocol'
+description: 'Learn the fundamentals of Linq Protocol and how it simplifies service communication through unified endpoints'
+icon: 'protocol'
+---
+
+# Unified Service Communication Protocol
+
+The Linq Protocol is a revolutionary approach to service communication that provides a unified, consistent interface for interacting with multiple microservices. Instead of managing different endpoints, authentication methods, and protocols for each service, Linq Protocol offers a single, standardized way to communicate with all your services.
+
+<Card title="Quick Start" icon="rocket" href="/linq-protocol/example/quotes">
+  Jump straight into a practical example with our Quotes Service RAG Workflow
+</Card>
+
+## Understanding the Problem
+
+Traditional microservice architectures require developers to:
+
+- **Know specific endpoints** for each service
+- **Handle different authentication** methods per service
+- **Manage varying protocols** and data formats
+- **Maintain complex routing** logic in applications
+- **Deal with service discovery** and load balancing
+
+This complexity grows exponentially as your system scales, making it difficult to maintain and integrate new services.
+
+## Traditional API Approach
+
+With traditional APIs, you need to know the exact endpoint for each service. However, Linqra simplifies this by providing a unified gateway architecture where all API requests go through a standardized endpoint pattern: `/r/servicename`.
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET https://localhost:7777/r/inventory-service/api/inventory \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "x-api-key: [API Key]" \
+    -H "x-api-key-name: [API KEY NAME]"
+  ```
+
+  ```json JSON Request
+  {
+    "method": "GET",
+    "url": "https://localhost:7777/r/inventory-service/api/inventory"
+  }
+  ```
+
+  ```python Python
+  import requests
+
+  url = "https://localhost:7777/r/inventory-service/api/inventory"
+  headers = {
+    "Authorization": "Bearer YOUR_TOKEN",
+    "x-api-key": "[API Key]",
+    "x-api-key-name": "[API KEY NAME]"
+  }
+
+  response = requests.get(url, headers=headers)
+  print(response.json())
+  ```
+</CodeGroup>
+
+### Service Examples
+
+For example, if you have services like inventory-service, chatbot, or reportapp, you can access them through:
+
+- **`/r/inventory-service`** - For inventory management
+- **`/r/chatbot`** - For chatbot interactions  
+- **`/r/reportapp`** - For report generation
+
+<Note>
+  Each service might have different endpoints, protocols, and authentication methods, but Linqra's gateway architecture provides a unified way to access them through the `/r/servicename` pattern.
+</Note>
+
+## Linq Protocol Approach
+
+Linq Protocol provides a higher-level abstraction for service communication. While the gateway architecture uses `/r/servicename` endpoints, Linq Protocol unifies all interactions through a single `POST /linq` endpoint with a standardized schema.
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://localhost:7777/linq \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "x-api-key: [API Key]" \
+    -H "x-api-key-name: [API KEY NAME]" \
+    -d '{
+      "link": {
+        "target": "inventory-service",
+        "action": "fetch"
+      },
+      "query": {
+        "intent": "api/inventory",
+        "params": {}
+      }
+    }'
+  ```
+
+  ```json JSON Request
+  {
+    "method": "POST",
+    "url": "https://localhost:7777/linq",
+    "body": {
+      "link": {
+        "target": "inventory-service",
+        "action": "fetch"
+      },
+      "query": {
+        "intent": "api/inventory",
+        "params": {}
+      }
+    }
+  }
+  ```
+
+  ```python Python
+  import requests
+
+  url = "https://localhost:7777/linq"
+  payload = {
+    "link": {
+      "target": "inventory-service",
+      "action": "fetch"
+    },
+    "query": {
+      "intent": "api/inventory",
+      "params": {}
+    }
+  }
+  headers = {
+    "Authorization": "Bearer YOUR_TOKEN",
+    "x-api-key": "[API Key]",
+    "x-api-key-name": "[API KEY NAME]",
+    "Content-Type": "application/json"
+  }
+
+  response = requests.post(url, json=payload, headers=headers)
+  print(response.json())
+  ```
+</CodeGroup>
+
+### Key Components
+
+The Linq Protocol request structure consists of:
+
+- **`POST /linq`** - Sends a Linq Protocol request
+- **`link`** - Defines the target service and action to perform
+- **`query`** - Specifies the API endpoint and parameters
+
+<Note>
+  This is just the beginning of what Linq Protocol can do. In advanced workflows, you can chain multiple service calls together, creating complex sequences of operations while maintaining the same simple interface. We'll explore these advanced capabilities in detail in later sections.
+</Note>
+
+## Key Benefits
+
+### Consistency
+**Single endpoint for all service communications**
+
+All your service interactions go through one standardized endpoint, eliminating the need to remember different URLs, ports, or protocols for each service.
+
+### Simplicity
+**Standardized request format across all services**
+
+Every request follows the same structure, making it easy to understand and maintain. No more guessing about endpoint formats or parameter structures.
+
+### Maintainability
+**Easier to manage and update service interactions**
+
+When you need to update how services communicate, you only need to modify the Linq Protocol layer, not every individual service integration.
+
+### Scalability
+**Simplified integration of new services**
+
+Adding new services to your system becomes trivial - just define the service in the Linq Protocol configuration and it's immediately available through the unified interface.
+
+## Advanced Capabilities
+
+While the basic Linq Protocol provides unified service communication, its true power lies in advanced workflow capabilities:
+
+### Workflow Orchestration
+Chain multiple service calls together in complex sequences:
+
+```json
+{
+  "link": {
+    "target": "workflow",
+    "action": "execute"
+  },
+  "query": {
+    "intent": "complex_operation",
+    "workflow": [
+      {
+        "step": 1,
+        "target": "service-a",
+        "action": "fetch",
+        "intent": "get_data"
+      },
+      {
+        "step": 2,
+        "target": "service-b",
+        "action": "process",
+        "intent": "transform_data",
+        "params": {
+          "input": "{{step1.result}}"
+        }
+      }
+    ]
+  }
+}
+```
+
+### RAG Integration
+Build sophisticated Retrieval-Augmented Generation workflows:
+
+- **Semantic Search**: Find relevant existing content
+- **Intelligent Generation**: Create new content when needed
+- **Knowledge Accumulation**: Build databases over time
+- **Quality Optimization**: Balance between retrieval and generation
+
+### Caching & Performance
+Optimize performance with built-in caching:
+
+```json
+{
+  "cacheConfig": {
+    "enabled": true,
+    "ttl": "86400",
+    "key": "unique_cache_key"
+  }
+}
+```
+
+## Getting Started
+
+Ready to explore Linq Protocol? Here's how to get started:
+
+1. **Basic Usage**: Learn how to make simple service calls
+2. **Workflow Examples**: See how to build complex workflows
+3. **RAG Workflows**: Explore advanced AI-powered applications
+4. **Best Practices**: Understand optimization and maintenance
+
+<Card title="Next Steps" icon="arrow-right" href="/linq-protocol/example/quotes">
+  Start with our comprehensive Quotes Service RAG Workflow example
+</Card>
+
+<Note>
+  Linq Protocol is designed to be both powerful and accessible. Start with simple service calls and gradually build up to complex workflows as your needs grow.
+</Note>

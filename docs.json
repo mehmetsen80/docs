@@ -86,6 +86,23 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Linq Protocol",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": [
+              "linq-protocol/introduction"
+            ]
+          },
+          {
+            "group": "Example",
+            "pages": [
+              "linq-protocol/example/quotes"
+            ]
+          }
+        ]
       }
     ]
   },
