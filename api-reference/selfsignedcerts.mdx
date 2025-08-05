@@ -121,23 +121,43 @@ For containerized environments, generate certificates for each service:
 ```bash
 # Inventory Service
 keytool -genkeypair -alias inventory-service-container -keyalg RSA -keysize 2048 \
-  -keystore inventory-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -keystore inventory-service-keystore-container.jks -validity 3650 -storetype PKCS12 \
   -dname "CN=inventory-service, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
   -storepass 123456 -keypass 123456
 
 keytool -exportcert -alias inventory-service-container \
-  -file inventory-cert-container.pem \
-  -keystore inventory-keystore-container.jks -storepass 123456
+  -file inventory-service-cert-container.pem \
+  -keystore inventory-service-keystore-container.jks -storepass 123456
 
 # Product Service
 keytool -genkeypair -alias product-service-container -keyalg RSA -keysize 2048 \
-  -keystore product-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -keystore product-service-keystore-container.jks -validity 3650 -storetype PKCS12 \
   -dname "CN=product-service, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
   -storepass 123456 -keypass 123456
 
 keytool -exportcert -alias product-service-container \
-  -file product-cert-container.pem \
-  -keystore product-keystore-container.jks -storepass 123456
+  -file product-service-cert-container.pem \
+  -keystore product-service-keystore-container.jks -storepass 123456
+
+# Quotes Service
+keytool -genkeypair -alias quotes-service-container -keyalg RSA -keysize 2048 \
+  -keystore quotes-service-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=quotes-service, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias quotes-service-container \
+  -file quotes-service-cert-container.pem \
+  -keystore quotes-service-keystore-container.jks -storepass 123456  
+
+# CounterApp Service
+keytool -genkeypair -alias counter-app-container -keyalg RSA -keysize 2048 \
+  -keystore counter-app-keystore-container.jks -validity 3650 -storetype PKCS12 \
+  -dname "CN=counter-app, OU=Software, O=Dipme, L=Richmond, ST=TX, C=US" \
+  -storepass 123456 -keypass 123456
+
+keytool -exportcert -alias counter-app-container \
+  -file counter-app-cert-container.pem \
+  -keystore counter-app-keystore-container.jks -storepass 123456  
 ```
 
 ## Truststore Configuration
@@ -152,10 +172,19 @@ keytool -importcert -file gateway-cert-container.pem -alias gateway-app-containe
   -keystore gateway-truststore.jks -storepass 123456
 keytool -importcert -file client-cert.pem -alias client-app \
   -keystore gateway-truststore.jks -storepass 123456
-keytool -importcert -file inventory-cert-container.pem -alias inventory-service-container \
+keytool -importcert -file inventory-service-cert-container.pem -alias inventory-service-container \
   -keystore gateway-truststore.jks -storepass 123456
-keytool -importcert -file product-cert-container.pem -alias product-service-container \
+keytool -importcert -file product-service-cert-container.pem -alias product-service-container \
   -keystore gateway-truststore.jks -storepass 123456
+keytool -importcert -file quotes-service-cert-container.pem -alias quotes-service-container \
+  -keystore gateway-truststore.jks -storepass 123456  
+keytool -importcert -file counter-app-cert-container.pem -alias counter-app-container \
+  -keystore gateway-truststore.jks -storepass 123456
+
+--Run this on the counter-app
+keytool -import -alias localhost -file keys/certs/server-cert.pem -keystore /Users/mehmetsen/IdeaProjects/Linqra/keys/gateway-truststore.jks -storepass 123456 -noprompt
+
+
 keytool -importcert -file eureka-cert.pem -alias eureka-app \
   -keystore gateway-truststore.jks -storepass 123456
 keytool -importcert -file eureka-cert-container.pem -alias eureka-app-container \
@@ -168,10 +197,14 @@ Import all certificates into the client truststore:
 ```bash
 keytool -importcert -file client-cert.pem -alias client-app \
   -keystore client-truststore.jks -storepass 123456
-keytool -importcert -file inventory-cert-container.pem -alias inventory-service-container \
+keytool -importcert -file inventory-service-cert-container.pem -alias inventory-service-container \
   -keystore client-truststore.jks -storepass 123456
-keytool -importcert -file product-cert-container.pem -alias product-service-container \
+keytool -importcert -file product-service-cert-container.pem -alias product-service-container \
   -keystore client-truststore.jks -storepass 123456
+keytool -importcert -file quotes-service-cert-container.pem -alias quotes-service-container \
+  -keystore client-truststore.jks -storepass 123456  
+keytool -importcert -file counter-app-cert-container.pem -alias counter-app-container \
+  -keystore client-truststore.jks -storepass 123456    
 keytool -importcert -file gateway-cert.pem -alias gateway-app \
   -keystore client-truststore.jks -storepass 123456
 keytool -importcert -file gateway-cert-container.pem -alias gateway-app-container \
@@ -194,14 +227,210 @@ keytool -importcert -file inventory-cert-container.pem -alias inventory-service-
   -keystore eureka-truststore.jks -storepass 123456
 keytool -importcert -file product-cert-container.pem -alias product-service-container \
   -keystore eureka-truststore.jks -storepass 123456
+keytool -importcert -file quotes-service-cert-container.pem -alias quotes-service-container \
+  -keystore eureka-truststore.jks -storepass 123456  
+keytool -importcert -file counter-app-cert-container.pem -alias counter-app-container \
+  -keystore eureka-truststore.jks -storepass 123456  
 keytool -importcert -file gateway-cert-container.pem -alias gateway-app-container \
   -keystore eureka-truststore.jks -storepass 123456
 ```
 
+## Python Project Certificate Setup (CounterApp)
+
+For Python projects like CounterApp that require mutual TLS (mTLS) authentication, you need to extract certificates from Java keystores and convert them to PEM format for use with Flask.
+
+### Prerequisites
+
+Ensure you have the following files in your `CounterApp/keys/` directory:
+- `counter-app-keystore-container.jks` (Java keystore)
+- `client-truststore.jks` (Java truststore)
+
+### Manual Certificate Extraction Process
+
+If you need to manually extract certificates, follow these steps:
+
+#### Step 1: Extract Certificate Aliases
+```bash
+# Get all certificate aliases from truststore
+keytool -list -keystore keys/client-truststore.jks -storepass 123456 | grep "Alias name:"
+```
+
+#### Step 2: Extract Certificates from Truststore
+```bash
+# Create certs directory
+mkdir -p keys/certs
+
+# Extract each certificate (replace ALIAS_NAME with actual alias)
+keytool -exportcert -alias ALIAS_NAME -file keys/certs/ALIAS_NAME.der \
+  -keystore keys/client-truststore.jks -storepass 123456
+```
+
+#### Step 3: Convert DER to PEM Format
+```bash
+# Convert each DER certificate to PEM
+openssl x509 -inform DER -in keys/certs/ALIAS_NAME.der -out keys/certs/ALIAS_NAME.pem
+```
+
+#### Step 4: Extract Server Certificate and Key
+```bash
+# Extract server certificate
+keytool -exportcert -alias counter-app-container -file keys/certs/server-cert.der \
+  -keystore keys/counter-app-keystore-container.jks -storepass 123456
+
+# Convert server certificate to PEM
+openssl x509 -inform DER -in keys/certs/server-cert.der -out keys/certs/server-cert.pem
+
+# Extract server private key (requires keytool with -importkeystore)
+keytool -importkeystore -srckeystore keys/counter-app-keystore-container.jks \
+  -destkeystore keys/certs/server.p12 -deststoretype PKCS12 \
+  -srcalias counter-app-container -deststorepass 123456 -srcstorepass 123456
+
+# Extract private key from PKCS12
+openssl pkcs12 -in keys/certs/server.p12 -out keys/certs/server-key.pem -nocerts -nodes -passin pass:123456
+```
+
+#### Step 5: Create CA Bundle
+```bash
+# Combine all certificates into CA bundle
+cat keys/certs/*.pem > keys/certs/ca-bundle.pem
+```
+
+#### Step 6: Create CA Certificate for Client Signing
+```bash
+# Generate CA private key
+openssl genrsa -out keys/certs/ca-key.pem 2048
+
+# Generate CA certificate
+openssl req -new -x509 -key keys/certs/ca-key.pem -out keys/certs/ca-cert.pem \
+  -days 3650 -subj "/CN=counter-app-ca/OU=Software/O=Dipme/L=Richmond/ST=TX/C=US"
+```
+
+#### Step 7: Create Client Certificate
+```bash
+# Generate client private key
+openssl genrsa -out keys/certs/client-key.pem 2048
+
+# Create client certificate signing request
+openssl req -new -key keys/certs/client-key.pem -out keys/certs/client-cert.csr \
+  -subj "/CN=client-app/OU=Software/O=Dipme/L=Richmond/ST=TX/C=US"
+
+# Sign client certificate with CA
+openssl x509 -req -in keys/certs/client-cert.csr -CA keys/certs/ca-cert.pem \
+  -CAkey keys/certs/ca-key.pem -CAcreateserial -out keys/certs/client-cert.pem -days 365
+```
+
+#### Step 8: Update CA Bundle
+```bash
+# Add CA certificate to bundle
+cat keys/certs/ca-cert.pem >> keys/certs/ca-bundle.pem
+```
+
+#### Step 9: Validate CA Bundle
+```bash
+# Verify CA certificate is properly included in the bundle
+openssl x509 -in keys/certs/ca-bundle.pem -text -noout | grep -A 3 "Subject:" | grep "app-ca"
+
+# Show all certificates in the CA bundle
+openssl x509 -in keys/certs/ca-bundle.pem -text -noout | grep -A 2 "Subject:"
+```
+
+
+
+### **Run Complete Certificate Setup Script**
+
+```bash
+python generate_all_certs.py
+```
+
+This script automatically handles ALL certificate setup parts:
+- **1**: Get certificate aliases dynamically from truststore
+- **2**: Extract all certificates from truststore (DER format)
+- **3**: Convert DER certificates to PEM format
+- **4**: Extract server certificate and private key from Java keystore
+- **5**: Extract server private key from Java keystore
+- **6**: Create CA bundle with all certificates
+- **7**: Clean up temporary files and unnecessary certificates
+- **8**: Create CA certificate for signing client certificates
+- **9**: Create client certificate signed by the CA
+- **10**: Update CA bundle with the CA certificate and cleanup
+
+**Final files after script execution:**
+- `server-cert.pem`: Server certificate (for Flask HTTPS)
+- `server-key.pem`: Server private key (for Flask HTTPS)
+- `ca-bundle.pem`: Combined CA certificates (for server validation)
+- `ca-key.pem`: CA private key
+- `ca-cert.pem`: CA certificate
+- `client-key.pem`: Client private key
+- `client-cert.pem`: Client certificate
+
+*Note: The script is completely dynamic and will automatically detect and process all certificates in your truststore. All manual steps are now automated!*
+
+### Part 3: Import Client Certificate for Browser Testing
+
+**Step 5a: Import Certificate into macOS Keychain**
+```bash
+# Import certificate into macOS Keychain for Chrome
+security import keys/certs/client-cert.pem -k ~/Library/Keychains/login.keychain-db \
+  -T /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome -f pemseq
+
+# Import private key into macOS Keychain
+security import keys/certs/client-key.pem -k ~/Library/Keychains/login.keychain-db \
+  -T /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome -t priv
+```
+
+**Alternative: Import via Keychain Access GUI (Recommended)**
+1. Open **Keychain Access** application
+2. Go to **File → Import Items...**
+3. Select `keys/certs/client-cert.pem` and `keys/certs/client-key.pem` files
+4. Enter your macOS password when prompted
+5. Set trust settings to "Always Trust" for testing
+
+**Start Flask App with mTLS Enabled**
+
+This step starts the Flask application with mutual TLS enabled.
+
+```bash
+export EUREKA_ENABLED=false && export MUTUAL_TLS_ENABLED=true && export HTTP_ENABLED=false && python app.py
+```
+
+### Testing mTLS
+
+**Test with curl (should succeed):**
+```bash
+curl -vk --cert keys/certs/client-cert.pem --key keys/certs/client-key.pem https://127.0.0.1:5001/health
+```
+
+**Test without certificate (should fail):**
+```bash
+curl -vk https://127.0.0.1:5001/health
+```
+
+**Test in browser:**
+- Open `https://127.0.0.1:5001/health` in Chrome
+- Chrome will prompt for certificate selection
+- Select the "client-app" certificate
+- Enter your macOS password when prompted
+
+### File Structure After Setup
+
+```
+CounterApp/keys/
+├── counter-app-keystore-container.jks    # Java keystore (from Phase 1)
+├── client-truststore.jks                 # Java truststore (from Phase 1)
+└── certs/
+    ├── server-cert.pem                  # Server certificate (for Flask HTTPS)
+    ├── server-key.pem                   # Server private key (for Flask HTTPS)
+    ├── ca-key.pem                       # CA private key
+    ├── ca-cert.pem                      # CA certificate
+    ├── client-key.pem                   # Client private key
+    ├── client-cert.pem                  # Client certificate
+    ├── client-cert.csr                  # Client certificate signing request
+    ├── ca-bundle.pem                    # Combined CA certificates
+    └── ... (other extracted certificates)
+```
+
 ## Verification
-
 To verify the contents of any truststore:
-
 ```bash
 keytool -list -v -keystore <truststore-name>.jks -storepass 123456
 ```
