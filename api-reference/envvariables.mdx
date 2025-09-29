@@ -40,6 +40,9 @@ export KEY_BASE_DIR="/etc/keys"
 # Eureka Discovery Server
 export EUREKA_KEY_STORE="$KEY_BASE_DIR/eureka-keystore.jks"
 export EUREKA_KEY_STORE_PASSWORD="123456"
+export EUREKA_TRUST_STORE="$KEY_BASE_DIR/eureka-truststore.jks"
+export EUREKA_TRUST_STORE_PASSWORD="123456"
+
 
 # API Gateway
 export GATEWAY_KEY_STORE="$KEY_BASE_DIR/gateway-keystore.jks"
@@ -102,6 +105,9 @@ export KEY_BASE_DIR="/etc/keys"
 # Eureka Discovery Server
 export EUREKA_KEY_STORE="$KEY_BASE_DIR/eureka-keystore.jks"
 export EUREKA_KEY_STORE_PASSWORD="123456"
+export EUREKA_TRUST_STORE="$KEY_BASE_DIR/eureka-truststore.jks"
+export EUREKA_TRUST_STORE_PASSWORD="123456"
+
 
 # API Gateway
 export GATEWAY_KEY_STORE="$KEY_BASE_DIR/gateway-keystore.jks"
@@ -116,7 +122,7 @@ export CLIENT_TRUST_STORE="$KEY_BASE_DIR/client-truststore.jks"
 export CLIENT_TRUST_STORE_PASSWORD="123456"
 
 # OAuth2 Settings
-export OAUTH2_REDIRECT_URI="http://localhost:3000/callback"
+export OAUTH2_REDIRECT_URI="https://localhost:3000/callback"
 
 # Notification Settings (Coming Soon)
 export SLACK_ENABLED=false
