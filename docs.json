@@ -56,7 +56,6 @@
             "pages": [
               "api-reference/introduction",
               "api-reference/selfsignedcerts",
-              "api-reference/envvariables",
               "api-reference/mongodb",
               "api-reference/redis",
               "api-reference/keycloak"

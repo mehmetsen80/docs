@@ -129,6 +129,7 @@ The MongoDB replica set is configured using Docker Compose. Here's the complete 
 
 ```yaml
 services:
+    # mongodb nodes
   mongodb1:
     deploy:
       resources:
@@ -140,14 +141,16 @@ services:
       dockerfile: ./.kube/mongodb/Dockerfile
     container_name: mongodb1
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: mongopw
       MONGO_REPLICA_SET_NAME: rs0
+      VAULT_MASTER_KEY: ${VAULT_MASTER_KEY}
+      VAULT_ENVIRONMENT: ${VAULT_ENVIRONMENT:-dev}
+      VAULT_REQUIRED_VARS: MONGO_INITDB_ROOT_USERNAME,MONGO_INITDB_ROOT_PASSWORD
     ports:
       - "27017:27017"
     volumes:
       - ./.kube/mongodb/data1/:/data/db
       - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+      - ./secrets:/app/secrets:ro
     networks:
       - linqra-network
     command: mongod --bind_ip_all --replSet rs0 --port 27017 -keyFile /data/mongo-keyfile
@@ -163,17 +166,19 @@ services:
       dockerfile: ./.kube/mongodb/Dockerfile
     container_name: mongodb2
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: mongopw
       MONGO_REPLICA_SET_NAME: rs0
+      VAULT_MASTER_KEY: ${VAULT_MASTER_KEY}
+      VAULT_ENVIRONMENT: ${VAULT_ENVIRONMENT:-dev}
+      VAULT_REQUIRED_VARS: MONGO_INITDB_ROOT_USERNAME,MONGO_INITDB_ROOT_PASSWORD
     ports:
       - "27018:27018"
     volumes:
       - ./.kube/mongodb/data2/:/data/db
       - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+      - ./secrets:/app/secrets:ro
     networks:
       - linqra-network
-    command: mongod --bind_ip_all --replSet rs0 --port 27018 -keyFile /data/mongo-keyfile
+    command: mongod  --bind_ip_all  --replSet rs0 --port 27018 -keyFile /data/mongo-keyfile
 
   mongodb3:
     deploy:
@@ -186,14 +191,16 @@ services:
       dockerfile: ./.kube/mongodb/Dockerfile
     container_name: mongodb3
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: mongopw
       MONGO_REPLICA_SET_NAME: rs0
+      VAULT_MASTER_KEY: ${VAULT_MASTER_KEY}
+      VAULT_ENVIRONMENT: ${VAULT_ENVIRONMENT:-dev}
+      VAULT_REQUIRED_VARS: MONGO_INITDB_ROOT_USERNAME,MONGO_INITDB_ROOT_PASSWORD
     ports:
       - "27019:27019"
     volumes:
       - ./.kube/mongodb/data3/:/data/db
       - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+      - ./secrets:/app/secrets:ro
     networks:
       - linqra-network
     command: mongod --bind_ip_all --replSet rs0 --port 27019 -keyFile /data/mongo-keyfile

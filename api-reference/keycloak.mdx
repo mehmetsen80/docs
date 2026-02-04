@@ -15,7 +15,7 @@ Keycloak serves as the Identity and Access Management (IAM) solution for Linqra,
 ```bash
 URL: http://localhost:8281/
 Username: admin
-Password: admin
+Password: D!pme$Gateway77
 ```
 
 <Note>
@@ -23,7 +23,7 @@ Password: admin
 </Note>
 
 <Warning>
-  The default credentials (admin/admin) should only be used in development environments.
+  The default credentials (admin/D!pme$Gateway77) should only be used in development environments.
 </Warning>
 
 ## Configuration Steps
@@ -52,9 +52,27 @@ A realm in Keycloak manages a set of users, credentials, roles, and groups. Foll
 
 ### 2. Create New Client
 
-After creating the realm, you'll need to set up a client for the Linqra Gateway. Follow these steps:
+After creating the realm, you can either import the configuration or set it up manually.
 
-#### General Settings
+#### Option 1: Import Configuration (Recommended)
+
+You can skip the manual configuration by importing the client file.
+
+1. Download the [Linqra Gateway Client Configuration](/images/linqra-gateway-client.json).
+2. In the **Linqra** realm, click "Import client" and upload the file.
+
+<Frame>
+  <img 
+    src="/images/kc_import_client.png" 
+    alt="Importing client configuration" 
+  />
+</Frame>
+
+#### Option 2: Manual Configuration
+
+If you prefer to configure it manually, follow these steps:
+
+##### General Settings
 1. Navigate to "Clients" in the left sidebar
 2. Click "Create client"
 3. Set the following general settings:
@@ -71,7 +89,7 @@ After creating the realm, you'll need to set up a client for the Linqra Gateway.
   />
 </Frame>
 
-#### Access Settings
+##### Access Settings
 Configure the client's access settings:
 - Root URL: `https://localhost:7777`
 - Home URL: `https://localhost:7777`
@@ -87,7 +105,7 @@ Configure the client's access settings:
   />
 </Frame>
 
-#### Capability Config
+##### Capability Config
 Set up the authentication capabilities:
 - Client authentication: `ON`
 - Authorization: `OFF`

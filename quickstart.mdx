@@ -71,8 +71,7 @@ Before running the applications, ensure your keystore and truststore files are i
 - Working directory: Your project root directory
 - Environment variables:
 ```bash
-EUREKA_KEY_STORE=/Users/mehmetsen/IdeaProjects/Linqra/keys/eureka-keystore.jks
-EUREKA_KEY_STORE_PASSWORD=123456
+SPRING_PROFILES_ACTIVE=dev
 ```
 
 <Frame>
@@ -112,17 +111,7 @@ EUREKA_KEY_STORE_PASSWORD=123456
 
 #### Environment Variables
 ```bash
-GATEWAY_KEY_STORE=/Users/mehmetsen/IdeaProjects/Linqra/keys/gateway-keystore.jks
-GATEWAY_KEY_STORE_PASSWORD=123456
-GATEWAY_TRUST_STORE=/Users/mehmetsen/IdeaProjects/Linqra/keys/gateway-truststore.jks
-GATEWAY_TRUST_STORE_PASSWORD=123456
-KEYCLOAK_GATEWAY_PORT=8281
-KEYCLOAK_GATEWAY_URL=localhost
-SLACK_ENABLED=false
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
-SMTP_ENABLED=false
-SMTP_PASSWORD=
-SMTP_USERNAME=
+SPRING_PROFILES_ACTIVE=dev
 ```
 
 <Frame>
@@ -132,15 +121,8 @@ SMTP_USERNAME=
   />
 </Frame>
 
-<Note>
-  Make sure to:
-  - Adjust all file paths to match your project structure
-  - Update the Keycloak settings according to your setup
-  - Leave Slack and SMTP settings as disabled (`false`) as these features are not yet implemented
-</Note>
-
 <Warning>
-  The truststore and keystore paths in both VM options and environment variables must point to the certificate files in your project's `keys` directory. Make sure to update the paths in the configurations to match your local project location.
+  The truststore and keystore paths in VM options must point to the certificate files in your project's `keys` directory. Make sure to update the paths in the configurations to match your local project location.
 
   For example, if your project is at `/Users/username/Projects/Linqra`, then your paths should point to:
   - `/Users/username/Projects/Linqra/keys/gateway-truststore.jks`
@@ -193,7 +175,7 @@ After starting the Docker Compose configuration, you should see the following se
 - URL: `http://localhost:8281/`
 - Default credentials: 
   - Username: `admin`
-  - Password: `admin`
+  - Password: `D!pme$Gateway77f`
 
 <Frame>
   <img 
@@ -227,7 +209,7 @@ After starting the Docker Compose configuration, you should see the following se
 </Frame>
 
 #### 3. MongoDB Replica Set
-Connect using MongoDB Shell:
+Download MongoDB Compass and Connect using MongoDB Shell:
 ```bash
 mongosh "mongodb://root:mongopw@localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0&authSource=admin"
 ```
